@@ -1,0 +1,2665 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Do Relation Graphs Help Stock Forecasting? A Placebo-Graph Test</title>
+<meta name="description" content="Placebo-graph test of whether graph-based stock forecasters use their relation graphs.">
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']]}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+<style>
+:root{--fg:#1d1d1f;--muted:#5f6368;--bg:#fff;--accent:#1a5fb4;--rule:#e3e3e3}
+@media (prefers-color-scheme:dark){:root{--fg:#e8e8e8;--muted:#a0a4a8;--bg:#16181b;--accent:#8ab4f8;--rule:#33363a}}
+html{background:var(--bg)}
+body{font-family:Georgia,'Times New Roman',serif;color:var(--fg);background:var(--bg);max-width:820px;margin:0 auto;padding:24px 16px 80px;line-height:1.6;font-size:17px}
+h1{font-size:1.75em;line-height:1.25;margin:.4em 0 .3em}
+h2{font-size:1.3em;margin-top:2em;border-bottom:1px solid var(--rule);padding-bottom:.2em}
+h3{font-size:1.1em;margin-top:1.5em}
+a{color:var(--accent)}
+.authors{color:var(--muted);margin-bottom:1.5em}
+.authors b{color:var(--fg);font-weight:600}
+.abstract{border-left:3px solid var(--accent);padding:.2em 1em;margin:1.5em 0}
+.keywords{color:var(--muted);font-size:.92em}
+.links{margin:1em 0 2em}
+.links a{display:inline-block;margin-right:1em}
+figure{margin:1.5em 0;text-align:center}
+figure img{max-width:100%;height:auto}
+figcaption,.caption{font-size:.9em;color:var(--muted);text-align:left}
+.table-wrap{overflow-x:auto;margin:1.2em 0}
+table{border-collapse:collapse;font-size:.82em;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;margin:0 auto}
+th,td{padding:3px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+thead th{border-bottom:2px solid var(--fg)}
+.csl-entry{margin-bottom:.5em;padding-left:2em;text-indent:-2em;font-size:.93em}
+</style></head><body>
+<h1>Do Relation Graphs Help Stock Forecasting? A Placebo-Graph Test</h1>
+<div class="authors"><b>Alexander Apartsin</b>, Holon Institute of Technology, Holon, Israel<br>
+<b>Yehudit Aperstein</b>*, Afeka Tel Aviv Academic College of Engineering, Tel Aviv, Israel<br>
+<small>*Corresponding author</small></div>
+<div class="links"><a href="paper.pdf">PDF</a></div>
+<div class="abstract"><h2 style="border:0;margin-top:.4em">Abstract</h2><p>Graph-based stock forecasters report gains from links between firms,
+such as shared industries or business concepts, yet the standard
+evaluation compares them only with models that lack the graph and the
+machinery that uses it, so the gain cannot be attributed to the links.
+We propose a placebo-graph test for this attribution: the forecaster is
+retrained with placebo graphs that keep the size and shape of the real
+graph but scramble who is linked to whom, and the paired difference in
+forecast accuracy is estimated over training seeds and test days.
+Applied to three published models in three equity markets, the real
+graph forecasts no better than its random and degree-preserving placebos
+on ranking accuracy, forecast-comparison tests and portfolio returns,
+with equivalence bounds of 0.002 to 0.005 in daily rank correlation.
+Where models beat simpler baselines, the gain comes from the
+architecture and its training, not from the specific links. A
+planted-signal experiment shows that the test detects a strong
+relational signal when the model can learn it, and that two of the
+models do not learn a planted neighbour signal even when it runs along
+their own graph. The test is cheap and model-agnostic, and it gives
+forecasters a routine check of whether a relational input adds
+predictive value.</p>
+
+<p class="keywords"><b>Keywords:</b> forecast evaluation; placebo test; graph neural networks; stock return prediction; equivalence testing; reproducibility</p></div>
+<h1 id="sec:intro">Introduction</h1>
+<p>A growing literature forecasts stock returns with graph neural
+networks that pass information between related firms. The relations come
+from industry classifications, knowledge bases such as Wikidata,
+business-concept tags, supply chains or co-movement <span
+class="citation"
+data-cites="feng2019temporal kim2019hats sawhney2021sthan xu2021hist zheng2023rtgcn">(<a
+href="#ref-feng2019temporal" role="doc-biblioref">Feng et al. 2019</a>;
+<a href="#ref-kim2019hats" role="doc-biblioref">Kim et al. 2019</a>; <a
+href="#ref-sawhney2021sthan" role="doc-biblioref">Sawhney et al.
+2021</a>; <a href="#ref-xu2021hist" role="doc-biblioref">Xu et al.
+2021</a>; <a href="#ref-zheng2023rtgcn" role="doc-biblioref">Zheng et
+al. 2023</a>)</span>. The economic motivation is sound: news and returns
+propagate along economic links <span class="citation"
+data-cites="cohen2008economic">(<a href="#ref-cohen2008economic"
+role="doc-biblioref">Cohen and Frazzini 2008</a>)</span>, and industry
+effects explain part of momentum <span class="citation"
+data-cites="moskowitz1999industries">(<a
+href="#ref-moskowitz1999industries" role="doc-biblioref">Moskowitz and
+Grinblatt 1999</a>)</span>. Published models report gains over
+sequence-only baselines and attribute them to the relation graph, in a
+field where machine-learning forecasts of returns are now standard <span
+class="citation" data-cites="gu2020empirical">(<a
+href="#ref-gu2020empirical" role="doc-biblioref">Gu, Kelly, and Xiu
+2020</a>)</span> and graph convolutions over corporate relations were
+introduced early <span class="citation"
+data-cites="chen2018incorporating">(<a href="#ref-chen2018incorporating"
+role="doc-biblioref">Chen, Wei, and Huang 2018</a>)</span>.</p>
+<p>That attribution is rarely tested. A relational model differs from
+its sequence-only baseline in two ways at once: it receives the relation
+graph, and it has extra machinery for mixing information across stocks.
+A gain over the baseline can come from either. The comparison that
+isolates the graph keeps the machinery and replaces the graph with one
+that has the same size and shape but carries no information about which
+firms are related. If the real graph does not beat such a placebo, the
+specific relations are not what the model learned from.</p>
+<p>This paper introduces PlaceboGraph, a validation protocol built on
+that comparison. A forecaster is retrained under a family of placebo
+graphs, each preserving a different property of the real graph: the
+number of links, every firm’s number of links, the training-period
+co-movement structure, or none of the structure (uniform mixing across
+all firms, or no cross-firm links at all). The real graph’s advantage
+over each placebo is estimated with seeds paired across conditions and a
+block bootstrap over test days, and the family of comparisons is
+corrected for multiple testing. Which placebo closes the gap diagnoses
+what the graph contributes.</p>
+<p>We apply the protocol to three published models, each run on the
+authors’ data with the authors’ code (RSR in a PyTorch port verified
+against the original) and first reproduced against its published results
+or released checkpoint: the Relational Stock Ranking model of <span
+class="citation" data-cites="feng2019temporal">Feng et al. (<a
+href="#ref-feng2019temporal" role="doc-biblioref">2019</a>)</span> on
+NYSE and NASDAQ with industry and Wikidata relations, HIST <span
+class="citation" data-cites="xu2021hist">(<a href="#ref-xu2021hist"
+role="doc-biblioref">Xu et al. 2021</a>)</span> on the Chinese CSI300
+with business-concept relations, and RT-GCN <span class="citation"
+data-cites="zheng2023rtgcn">(<a href="#ref-zheng2023rtgcn"
+role="doc-biblioref">Zheng et al. 2023</a>)</span> on NASDAQ with
+combined industry and Wikidata relations. In every case the real graph
+forecasts as well as its random and degree-preserving placebos and no
+better. The primary test, a two-way bootstrap of the daily rank
+correlation, finds no difference against any structure-matched placebo,
+and Diebold-Mariano and Giacomini-White tests <span class="citation"
+data-cites="diebold1995comparing harvey1997testing giacomini2006tests">(<a
+href="#ref-diebold1995comparing" role="doc-biblioref">Diebold and
+Mariano 1995</a>; <a href="#ref-harvey1997testing"
+role="doc-biblioref">D. Harvey, Leybourne, and Newbold 1997</a>; <a
+href="#ref-giacomini2006tests" role="doc-biblioref">Giacomini and White
+2006</a>)</span> find none against the random and degree-preserving
+placebos. With seeds and test days both resampled, equivalence bounds
+place the real graph’s advantage over a random graph within 0.002 to
+0.005 in daily rank correlation; on NASDAQ and CSI300 this is 3% to 9%
+of the model’s own rank correlation.</p>
+<p>A null result is only informative if the test can detect an effect.
+We therefore plant a relational signal into the returns of every market,
+built from each firm’s real-graph neighbours and orthogonal to the
+firm’s own inputs, and rerun the placebo family. The control separates
+two explanations of placebo equivalence. For RSR the protocol detects
+the planted signal at a strength of 0.10 in correlation with next-day
+returns against every structure-matched placebo in both markets, and the
+equivalence bounds of the published RSR graphs against the random
+placebo lie below the advantage that this signal produces. Detection
+requires a strong signal: at strength 0.10 the planted term alone ranks
+NYSE stocks with a rank correlation of 0.15, above the total skill of
+published models, and a signal half as strong is not detected. We
+therefore report, for every cell, the smallest advantage the test
+detects with 80% power. For HIST and RT-GCN, the real graph does not
+separate from its placebos at a planted strength of 0.10, although the
+planted term alone ranks test-day stocks with a rank correlation of 0.09
+on RT-GCN’s data: the trained models’ predictions are uncorrelated with
+it under every graph. These two models, trained with their published
+recipes, do not learn a neighbour-mean lead-lag signal of this form even
+when it runs along their own graph.</p>
+<p>The protocol also locates where the reported gains come from. On
+NASDAQ, the Feng et al. model with Wikidata relations beats a
+uniform-mixing placebo, but random graphs, degree-preserving graphs and
+a graph without cross-firm links all match it: mixing every firm with
+the whole market hurts, while sparse links, real or random, add nothing
+over no links. HIST beats its sequence-only base model, and a concept
+graph without any links keeps about 80% of that gain; an LSTM trained
+for HIST’s longer budget recovers about 40% of it: the improvement comes
+from HIST’s additional modules and training, not from the predefined
+concepts.</p>
+<p>The contributions are: (i) a model-agnostic placebo-graph protocol
+with paired inference, a diagnosis rule and an open implementation; (ii)
+a reproduction-first audit of three published relational stock
+forecasters across three markets; (iii) a planted-signal control that
+makes the equivalence results interpretable and separates graphs without
+usable information from models that do not learn relational signal; and
+(iv) the full battery of forecast-evaluation tests that the forecasting
+literature uses to compare models.</p>
+<h1 id="sec:related">Related work</h1>
+<h4 id="relational-stock-forecasting">Relational stock forecasting</h4>
+<p><span class="citation" data-cites="feng2019temporal">Feng et al. (<a
+href="#ref-feng2019temporal" role="doc-biblioref">2019</a>)</span>
+introduced temporal relational ranking with industry and Wikidata
+relations on NYSE and NASDAQ; <span class="citation"
+data-cites="kim2019hats">Kim et al. (<a href="#ref-kim2019hats"
+role="doc-biblioref">2019</a>)</span> used hierarchical attention over
+Wikidata relations; <span class="citation"
+data-cites="sawhney2021sthan">Sawhney et al. (<a
+href="#ref-sawhney2021sthan" role="doc-biblioref">2021</a>)</span> used
+hypergraphs over the same data; HIST <span class="citation"
+data-cites="xu2021hist">(<a href="#ref-xu2021hist"
+role="doc-biblioref">Xu et al. 2021</a>)</span> combines predefined
+business concepts with learned hidden concepts on CSI300 through the
+Qlib platform <span class="citation" data-cites="yang2020qlib">(<a
+href="#ref-yang2020qlib" role="doc-biblioref">Yang et al.
+2020</a>)</span>; RT-GCN <span class="citation"
+data-cites="zheng2023rtgcn">(<a href="#ref-zheng2023rtgcn"
+role="doc-biblioref">Zheng et al. 2023</a>)</span> adds time-aware
+relation weighting. These papers compare against sequence-only baselines
+and, in some cases, remove one relation type at a time. None reports a
+placebo graph with the real graph’s size and shape. <span
+class="citation" data-cites="niu2024evaluating">Niu et al. (<a
+href="#ref-niu2024evaluating" role="doc-biblioref">2024</a>)</span>
+evaluate financial relation graphs before any model is trained, by how
+well a graph explains past co-movement; PlaceboGraph instead tests
+whether a trained forecaster uses its graph, by retraining it under
+placebos. Student analyses of graph models for equity returns <span
+class="citation" data-cites="bsic2026network bsic2026network2">(<a
+href="#ref-bsic2026network" role="doc-biblioref">Bocconi Students
+Investment Club (BSIC) 2026a</a>, <a href="#ref-bsic2026network2"
+role="doc-biblioref">2026b</a>)</span> report a single random-graph
+control in which the random graph matches or beats the real one, without
+intervals or a family of controls.</p>
+<h4 id="do-graph-models-use-their-graphs">Do graph models use their
+graphs?</h4>
+<p><span class="citation" data-cites="errica2020fair">Errica et al. (<a
+href="#ref-errica2020fair" role="doc-biblioref">2020</a>)</span> showed
+that structure-agnostic baselines rival graph networks on graph
+classification; <span class="citation"
+data-cites="bechlerspeicher2024gnns">Bechler-Speicher et al. (<a
+href="#ref-bechlerspeicher2024gnns"
+role="doc-biblioref">2024</a>)</span> showed that graph networks fit
+uninformative graph structure; <span class="citation"
+data-cites="katsman2024revisiting">Katsman, Lou, and Gilbert (<a
+href="#ref-katsman2024revisiting" role="doc-biblioref">2024</a>)</span>
+found that many graph benchmarks do not require graph learning. <span
+class="citation" data-cites="coupette2025rings">Coupette et al. (<a
+href="#ref-coupette2025rings" role="doc-biblioref">2025</a>)</span>
+propose evaluating graph datasets with perturbed graphs (empty,
+complete, random and shuffled) for graph-level classification. <span
+class="citation" data-cites="hussain2020structure">Hussain et al. (<a
+href="#ref-hussain2020structure" role="doc-biblioref">2021</a>)</span>
+compare stochastic-block-model, configuration-model and Erdős-Rényi
+nulls to attribute node-classification gains to communities or degree.
+In spatio-temporal forecasting, simple identity-based models match graph
+models <span class="citation"
+data-cites="shao2022stid shao2024basicts">(<a href="#ref-shao2022stid"
+role="doc-biblioref">Shao et al. 2022</a>, <a
+href="#ref-shao2024basicts" role="doc-biblioref">2025</a>)</span>,
+adaptive graphs replace predefined ones <span class="citation"
+data-cites="bai2020agcrn">(<a href="#ref-bai2020agcrn"
+role="doc-biblioref">Bai et al. 2020</a>)</span>, and single
+rewired-graph controls appear in anomaly forecasting <span
+class="citation" data-cites="pillai2025rewired">(<a
+href="#ref-pillai2025rewired" role="doc-biblioref">Pillai
+2025</a>)</span>. In fraud detection, shuffled edges outperform the real
+transaction graph under temporal shift <span class="citation"
+data-cites="maganti2026shuffled">(<a href="#ref-maganti2026shuffled"
+role="doc-biblioref">Maganti 2026</a>)</span>. Rewiring surveys
+recommend random and degree-preserving baselines <span class="citation"
+data-cites="attali2024rewiring">(<a href="#ref-attali2024rewiring"
+role="doc-biblioref">Attali et al. 2024</a>)</span>, following the
+degree-preserving swap of <span class="citation"
+data-cites="maslov2002specificity">Maslov and Sneppen (<a
+href="#ref-maslov2002specificity" role="doc-biblioref">2002</a>)</span>.
+PlaceboGraph differs from this work in four respects: a property-indexed
+family of placebos including correlation-matched graphs, paired
+inference over time and seeds, a diagnosis rule, and an audit of
+published forecasters run with their own code and data.</p>
+<h4 id="forecast-evaluation-and-reproducibility">Forecast evaluation and
+reproducibility</h4>
+<p>We use the Diebold-Mariano test with heteroskedasticity- and
+autocorrelation-consistent variance <span class="citation"
+data-cites="diebold1995comparing newey1987simple">(<a
+href="#ref-diebold1995comparing" role="doc-biblioref">Diebold and
+Mariano 1995</a>; <a href="#ref-newey1987simple"
+role="doc-biblioref">Newey and West 1987</a>)</span> and the
+small-sample correction of <span class="citation"
+data-cites="harvey1997testing">D. Harvey, Leybourne, and Newbold (<a
+href="#ref-harvey1997testing" role="doc-biblioref">1997</a>)</span>, the
+conditional predictive-ability test of <span class="citation"
+data-cites="giacomini2006tests">Giacomini and White (<a
+href="#ref-giacomini2006tests" role="doc-biblioref">2006</a>)</span>,
+which allows for estimated models, the adjusted test of <span
+class="citation" data-cites="clark2007approximately">Clark and West (<a
+href="#ref-clark2007approximately" role="doc-biblioref">2007</a>)</span>
+for nested models, the model confidence set <span class="citation"
+data-cites="hansen2011mcs">(<a href="#ref-hansen2011mcs"
+role="doc-biblioref">Peter R. Hansen, Lunde, and Nason 2011</a>)</span>,
+which extends the superior-predictive-ability test of <span
+class="citation" data-cites="hansen2005test">Peter Reinhard Hansen (<a
+href="#ref-hansen2005test" role="doc-biblioref">2005</a>)</span> to sets
+of models, block and stationary bootstraps <span class="citation"
+data-cites="kunsch1989jackknife politis1994stationary">(<a
+href="#ref-kunsch1989jackknife" role="doc-biblioref">Künsch 1989</a>; <a
+href="#ref-politis1994stationary" role="doc-biblioref">Politis and
+Romano 1994</a>)</span>, false-discovery-rate control <span
+class="citation" data-cites="benjamini1995fdr">(<a
+href="#ref-benjamini1995fdr" role="doc-biblioref">Benjamini and Hochberg
+1995</a>)</span>, Sharpe-ratio comparisons <span class="citation"
+data-cites="ledoit2008sharpe">(<a href="#ref-ledoit2008sharpe"
+role="doc-biblioref">Ledoit and Wolf 2008</a>)</span> and equivalence
+testing <span class="citation" data-cites="schuirmann1987tost">(<a
+href="#ref-schuirmann1987tost" role="doc-biblioref">Schuirmann
+1987</a>)</span>. Multiple testing in return prediction is a known
+source of spurious findings <span class="citation"
+data-cites="harvey2016cross">(<a href="#ref-harvey2016cross"
+role="doc-biblioref">C. R. Harvey, Liu, and Zhu 2016</a>)</span>, and
+recent work documents spurious predictability in financial machine
+learning from the data side <span class="citation"
+data-cites="nikolopoulos2026placebo">(<a
+href="#ref-nikolopoulos2026placebo" role="doc-biblioref">Nikolopoulos
+2026</a>)</span>. Reproducibility audits in recommender systems found
+that simple baselines match most neural methods <span class="citation"
+data-cites="ferraridacrema2021troubling">(<a
+href="#ref-ferraridacrema2021troubling" role="doc-biblioref">Ferrari
+Dacrema et al. 2021</a>)</span>; our audit is the relational-forecasting
+counterpart.</p>
+<h4 id="economic-links-and-permutation-inference">Economic links and
+permutation inference</h4>
+<p>Return predictability along economic links is documented directly:
+customer returns predict supplier returns <span class="citation"
+data-cites="cohen2008economic">(<a href="#ref-cohen2008economic"
+role="doc-biblioref">Cohen and Frazzini 2008</a>)</span>, industry
+information diffuses with a lead-lag <span class="citation"
+data-cites="hou2007industry">(<a href="#ref-hou2007industry"
+role="doc-biblioref">Hou 2007</a>)</span> and returns cross-predict
+within related segments <span class="citation"
+data-cites="menzly2010market">(<a href="#ref-menzly2010market"
+role="doc-biblioref">Menzly and Ozbas 2010</a>)</span>. Our planted
+signal reproduces this mechanism, a neighbour-mean lead-lag spillover,
+inside the forecasters’ own data. Placebo graphs are a permutation test
+on the adjacency, in the tradition of bootstrap and permutation
+inference against data snooping in forecast evaluation <span
+class="citation" data-cites="white2000reality romano2005stepwise">(<a
+href="#ref-white2000reality" role="doc-biblioref">White 2000</a>; <a
+href="#ref-romano2005stepwise" role="doc-biblioref">Romano and Wolf
+2005</a>)</span>: the real graph is compared with graphs drawn from a
+null that preserves a named property of it.</p>
+<h1 id="sec:protocol">The PlaceboGraph protocol</h1>
+<h2 id="setup">Setup</h2>
+<p>A relational forecaster <span class="math inline">\(F\)</span> maps a
+panel of firm histories <span class="math inline">\(X\)</span> and a
+relation graph <span class="math inline">\(G\)</span> to next-period
+scores. We write <span class="math inline">\(G\)</span> as an <span
+class="math inline">\(N \times N \times K\)</span> binary tensor over
+<span class="math inline">\(N\)</span> firms and <span
+class="math inline">\(K\)</span> relation types, so that firms <span
+class="math inline">\(i\)</span> and <span
+class="math inline">\(j\)</span> are linked if any of the <span
+class="math inline">\(K\)</span> entries for the pair is one. The
+protocol holds <span class="math inline">\(F\)</span>, its
+hyperparameters, data, training budget and model-selection rule fixed,
+and varies only <span class="math inline">\(G\)</span>.</p>
+<h2 id="the-placebo-family">The placebo family</h2>
+<p>Each placebo preserves a named property of the real graph <span
+class="math inline">\(G\)</span> and destroys the rest (Table <a
+href="#tab:family" data-reference-type="ref"
+data-reference="tab:family">1</a>).</p>
+<div id="tab:family">
+<div class="table-wrap"><table>
+<caption>The placebo family. Each placebo is drawn afresh for every
+seed.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Placebo</th>
+<th style="text-align: left;">Preserves</th>
+<th style="text-align: left;">Destroys</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Random</td>
+<td style="text-align: left;">number of links; multiset of relation-type
+vectors</td>
+<td style="text-align: left;">who is linked to whom</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: left;">every firm’s number of links (double-edge
+swaps)</td>
+<td style="text-align: left;">which partners a firm has</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: left;">number of links; links placed on the
+strongest</td>
+<td style="text-align: left;">semantic content of links</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">training-period return correlations</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: left;">nothing; every firm mixes with all
+others</td>
+<td style="text-align: left;">sparsity and identity</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Self-loops only</td>
+<td style="text-align: left;">nothing; no cross-firm links</td>
+<td style="text-align: left;">all cross-firm information</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: left;">the model’s sequence component only</td>
+<td style="text-align: left;">the relational component</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>The random placebo reassigns the real graph’s relation vectors to the
+same number of uniformly drawn firm pairs. The degree-preserving placebo
+applies ten successful double-edge swaps per link <span class="citation"
+data-cites="maslov2002specificity">(<a href="#ref-maslov2002specificity"
+role="doc-biblioref">Maslov and Sneppen 2002</a>)</span>, so every firm
+keeps its number of links while its partners change; when relations are
+typed, the swap acts on the union graph and each link carries its
+relation vector. The correlation-matched placebo places the same number
+of links on the firm pairs with the highest return correlation over the
+training period only, and assigns them the real relation vectors at
+random. This placebo answers whether the real graph adds anything beyond
+co-movement that a forecaster could estimate from its own training data.
+Uniform mixing and self-loops-only bracket the space: the first replaces
+sparse aggregation with a market average, the second removes cross-firm
+information while keeping the model’s architecture. The no-graph base
+model is the sequence-only model from which the relational model is
+built.</p>
+<h2 id="paired-inference">Paired inference</h2>
+<p>Every condition is trained with the same <span
+class="math inline">\(S\)</span> seeds, so that seed <span
+class="math inline">\(s\)</span> shares initialisation and data order
+across conditions. For a daily metric <span
+class="math inline">\(m_{c,s,t}\)</span> of condition <span
+class="math inline">\(c\)</span>, seed <span
+class="math inline">\(s\)</span> and test day <span
+class="math inline">\(t\)</span> (we use the cross-sectional rank
+correlation between scores and next-day returns, the rank IC), the real
+graph’s advantage over placebo <span class="math inline">\(c\)</span> is
+<span class="math display">\[\Delta_c =
+\frac{1}{S\,T}\sum_{s=1}^{S}\sum_{t=1}^{T}\left(m_{\mathrm{real},s,t} -
+m_{c,s,t}\right).\]</span> Confidence intervals come from a two-way
+bootstrap that resamples seeds with replacement and, independently,
+contiguous ten-day blocks of test days, drawn as circular moving blocks
+<span class="citation" data-cites="kunsch1989jackknife">(<a
+href="#ref-kunsch1989jackknife" role="doc-biblioref">Künsch
+1989</a>)</span>, using the same day blocks for the real graph and the
+placebo (5,000 resamples). Seed-to-seed training variation therefore
+enters every interval. The pairing is informative: the across-day
+correlation of daily rank IC between the real graph and a
+structure-matched placebo is 0.76 to 0.78 for the same seed on NYSE,
+against 0.53 to 0.61 for different seeds. In simulations with the split
+between seed-level and day-level variance measured in these data (seed
+shares 0.3 to 0.7, ten or 20 seeds), the test rejects a true null in 4%
+to 8% of samples at the 5% level. This comparison of daily rank IC is
+the primary test; the forecast-comparison tests, the model confidence
+set and the portfolio comparisons are secondary analyses reported in
+full. Two-sided bootstrap <span class="math inline">\(p\)</span>-values
+are adjusted with the Benjamini-Hochberg procedure <span
+class="citation" data-cites="benjamini1995fdr">(<a
+href="#ref-benjamini1995fdr" role="doc-biblioref">Benjamini and Hochberg
+1995</a>)</span> within each family, defined as the placebo comparisons
+of one model in one market for one metric; we report raw <span
+class="math inline">\(p\)</span>-values alongside. Each family contains
+five or six tests; the forecast-comparison, model-confidence-set,
+portfolio and equivalence analyses below form separate families, each
+again defined as one model in one market for one loss or portfolio.
+Pooling all metrics of a model into one family leaves every rank-IC
+verdict unchanged. We report the same comparisons for top-<span
+class="math inline">\(k\)</span> portfolio returns.</p>
+<h2 id="diagnosis">Diagnosis</h2>
+<p>The pattern of placebo comparisons identifies what the graph
+contributes. If the real graph beats random, degree-preserving and
+correlation-matched placebos, the specific relations carry information.
+If it beats self-loops but not the structure-matched placebos, sparse
+aggregation helps but the identity of neighbours does not. If it beats
+only uniform mixing, dense mixing hurts and sparse links, real or not,
+add nothing over none. If it beats the no-graph base model but not the
+placebos, the benefit comes from the architecture. If it beats nothing,
+the graph is unused.</p>
+<h2 id="sec:plant">Positive control</h2>
+<p>To show that the test detects relational information when it is
+present, we plant a signal that only the real graph can deliver. For
+firm <span class="math inline">\(j\)</span> on day <span
+class="math inline">\(t\)</span> let <span
+class="math inline">\(u_{j,t}\)</span> be a source signal visible in
+firm <span class="math inline">\(j\)</span>’s model input on day <span
+class="math inline">\(t\)</span>. For each firm <span
+class="math inline">\(i\)</span> with at least one real-graph neighbour,
+the planted term <span class="math inline">\(z_{i,t}\)</span> is the
+mean of <span class="math inline">\(u_{j,t}\)</span> over <span
+class="math inline">\(i\)</span>’s neighbours, residualised day by day
+on <span class="math inline">\(u_{i,t}\)</span> among firms with
+neighbours and standardised. Firms without neighbours receive no planted
+term. The planted target is <span class="math display">\[\tilde
+r_{i,t+1} = r_{i,t+1} + \beta\, z_{i,t},\]</span> with <span
+class="math inline">\(\beta\)</span> chosen so that the planted term has
+correlation <span class="math inline">\(\rho\)</span> with <span
+class="math inline">\(\tilde r\)</span> over all training cells (for
+HIST, whose data arrive as separate splits, within each split; this sets
+only the scale of the term). The residualisation makes the planted term
+invisible to a model that sees only firm <span
+class="math inline">\(i\)</span>’s own input (the correlation between
+<span class="math inline">\(z_{i,t}\)</span> and <span
+class="math inline">\(u_{i,t}\)</span> is below 0.001 in every market).
+We use two sources. The first, for RSR, is a fixed random projection
+<span class="math inline">\(u_{j,t}=\langle e_{j,t}, w\rangle\)</span>
+of the representation <span class="math inline">\(e_{j,t}\)</span> that
+the relational module aggregates, the most favourable case for detection
+(<span class="math inline">\(\rho \in \{0.02, 0.05, 0.10\}\)</span>).
+The second, for all three models, is the firm’s most recent daily return
+in the input window, so the planted term is a lead-lag spillover along
+the real graph (<span class="math inline">\(\rho=0.05\)</span> for RSR
+on NYSE; <span class="math inline">\(\rho \in \{0.05, 0.10\}\)</span>
+for HIST and RT-GCN). For HIST, neighbours are stocks that share a
+predefined concept. The planted term reaches 99% of NYSE firms, 13% of
+NASDAQ firms in the RSR universe, 87% to 94% of CSI300 stocks and 98% of
+NASDAQ firms in the RT-GCN universe (47 neighbours on average). We rerun
+the placebo family at each strength, and report two diagnostics: the
+oracle rank IC of the planted term (its daily rank correlation with the
+planted target on test days), and the correlation between each trained
+model’s test predictions and the planted term.</p>
+<h1 id="sec:data">Data, models and reproduction</h1>
+<h4 id="rsr-on-nyse-and-nasdaq">RSR on NYSE and NASDAQ</h4>
+<p>We port the Relational Stock Ranking model <span class="citation"
+data-cites="feng2019temporal">(<a href="#ref-feng2019temporal"
+role="doc-biblioref">Feng et al. 2019</a>)</span> to PyTorch, preserving
+the authors’ TensorFlow initialisation, loss (pointwise squared error
+plus a pairwise ranking hinge) and two-stage training, in which the
+relational module consumes the authors’ pretrained sequential
+embeddings. Data are the authors’ end-of-day panels: 1,737 NYSE and
+1,026 NASDAQ stocks, 2013 to 2017, with their validation and test split
+(test year 2017, 237 trading days). On NASDAQ only 13% of firms have a
+Wikidata neighbour. We study the published best cells: the
+implicit-relation model (RSR-I) with industry relations on NYSE, and the
+explicit-relation model (RSR-E) with Wikidata relations on NASDAQ. Each
+condition is trained for 50 epochs with 20 seeds and the authors’
+market-specific hyperparameters, and keeps the epoch with the lowest
+validation loss; training windows follow the authors’ code, in which the
+targets of the last training windows fall in the first days of the
+validation period.</p>
+<h4 id="hist-on-csi300">HIST on CSI300</h4>
+<p>We run HIST <span class="citation" data-cites="xu2021hist">(<a
+href="#ref-xu2021hist" role="doc-biblioref">Xu et al. 2021</a>)</span>
+through Qlib <span class="citation" data-cites="yang2020qlib">(<a
+href="#ref-yang2020qlib" role="doc-biblioref">Yang et al.
+2020</a>)</span> on the Alpha360 features of CSI300 constituents, with
+Qlib’s benchmark configuration: training 2008 to 2014, validation 2015
+to 2016, test January 2017 to July 2020 (871 test days). The predefined
+graph is the public stock-to-concept matrix (735 stocks by 4,635
+concepts, 7,478 links). HIST is initialised from a Qlib LSTM trained
+with the same seed; that LSTM is the no-graph base model. For the
+concept graph, the random placebo moves links uniformly, the
+degree-preserving placebo swaps links while keeping every stock’s and
+every concept’s size, and the correlation-matched placebo keeps each
+concept’s size and one randomly chosen true member and fills the
+remaining slots with that member’s most correlated stocks over the
+training period. HIST’s empty placebo removes every stock-to-concept
+link, so no information flows through predefined concepts; it is
+reported in the no-cross-firm-links row. HIST’s learned hidden-concept
+module still mixes information across stocks under every placebo, so
+HIST always has a learned graph in addition to the predefined one.</p>
+<h4 id="rt-gcn-on-nasdaq">RT-GCN on NASDAQ</h4>
+<p>We run RT-GCN <span class="citation" data-cites="zheng2023rtgcn">(<a
+href="#ref-zheng2023rtgcn" role="doc-biblioref">Zheng et al.
+2023</a>)</span> with the authors’ model code and data: 854 NASDAQ
+stocks with 136 industry and Wikidata relation types (39,669 linked
+pairs, 98% of stocks linked), 1,295 training days and 172 test days, and
+the authors’ configuration (time-aware relation weighting, Adam with
+learning rate 0.1 decayed at epochs 5 and 25, weight decay 0.1, batch
+64, 100 epochs). The authors’ code keeps the epoch with the lowest test
+loss; we hold out the last 20% of the training days for validation and
+keep the epoch with the lowest validation loss in every condition.
+RT-GCN always adds self-loops, so its uniform-mixing placebo is a
+complete graph with a single relation type.</p>
+<h4 id="reproduction">Reproduction</h4>
+<p>Table <a href="#tab:repro" data-reference-type="ref"
+data-reference="tab:repro">2</a> compares our real-graph runs with
+published results. RSR matches the published mean squared errors to
+within 0.5% and the published top-1 investment returns within one seed
+standard deviation; HIST and its LSTM base reproduce Qlib’s 20-seed
+benchmark to within 0.002 in IC. RT-GCN reaches a mean rank IC of 0.037
+over ten seeds; the authors’ released checkpoint, scored with the same
+evaluation code, reaches 0.028, so we compare against the checkpoint,
+which our runs exceed.</p>
+<div id="tab:repro">
+<div class="table-wrap"><table>
+<caption>Reproduction of published results (real graph, mean and
+standard deviation over seeds). Published values: Feng et al. (2019),
+Tables 5 to 7; Qlib Alpha360 benchmark (20 seeds). <span
+class="math inline">\(^{a}\)</span>The RT-GCN authors’ released
+checkpoint scored with our evaluation code.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market</th>
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">Metric</th>
+<th style="text-align: left;">Published</th>
+<th style="text-align: left;">Ours</th>
+<th style="text-align: left;">Seeds</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">RSR-I (industry)</td>
+<td style="text-align: left;">MSE</td>
+<td style="text-align: left;">2.26e-04</td>
+<td style="text-align: left;">2.27e-04</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">top-1 IRR</td>
+<td style="text-align: left;">1.06 <span
+class="math inline">\(\pm\)</span> 0.27</td>
+<td style="text-align: left;">0.96 <span
+class="math inline">\(\pm\)</span> 0.58</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">Rank-LSTM (no graph)</td>
+<td style="text-align: left;">MSE</td>
+<td style="text-align: left;">2.28e-04</td>
+<td style="text-align: left;">2.27e-04</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">top-1 IRR</td>
+<td style="text-align: left;">0.56 <span
+class="math inline">\(\pm\)</span> 0.68</td>
+<td style="text-align: left;">0.41 <span
+class="math inline">\(\pm\)</span> 0.69</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">RSR-E (Wikidata)</td>
+<td style="text-align: left;">MSE</td>
+<td style="text-align: left;">3.80e-04</td>
+<td style="text-align: left;">3.79e-04</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">top-1 IRR</td>
+<td style="text-align: left;">0.81 <span
+class="math inline">\(\pm\)</span> 0.85</td>
+<td style="text-align: left;">0.87 <span
+class="math inline">\(\pm\)</span> 0.63</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">Rank-LSTM (no graph)</td>
+<td style="text-align: left;">MSE</td>
+<td style="text-align: left;">3.79e-04</td>
+<td style="text-align: left;">3.80e-04</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">top-1 IRR</td>
+<td style="text-align: left;">0.68 <span
+class="math inline">\(\pm\)</span> 0.60</td>
+<td style="text-align: left;">0.52 <span
+class="math inline">\(\pm\)</span> 0.83</td>
+<td style="text-align: left;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300</td>
+<td style="text-align: left;">HIST (concepts)</td>
+<td style="text-align: left;">IC</td>
+<td style="text-align: left;">0.0522</td>
+<td style="text-align: left;">0.0503 <span
+class="math inline">\(\pm\)</span> 0.0035</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">rank IC</td>
+<td style="text-align: left;">0.0667</td>
+<td style="text-align: left;">0.0661 <span
+class="math inline">\(\pm\)</span> 0.0025</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">LSTM (no graph)</td>
+<td style="text-align: left;">IC</td>
+<td style="text-align: left;">0.0448</td>
+<td style="text-align: left;">0.0445 <span
+class="math inline">\(\pm\)</span> 0.0037</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">rank IC</td>
+<td style="text-align: left;">0.0549</td>
+<td style="text-align: left;">0.0545 <span
+class="math inline">\(\pm\)</span> 0.0024</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">RT-GCN (time-aware)</td>
+<td style="text-align: left;">rank IC</td>
+<td style="text-align: left;">0.0278<span
+class="math inline">\(^{a}\)</span></td>
+<td style="text-align: left;">0.0374 <span
+class="math inline">\(\pm\)</span> 0.0040</td>
+<td style="text-align: left;">10</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h1 id="sec:results">Results</h1>
+<h2 id="the-real-graph-matches-its-placebos">The real graph matches its
+placebos</h2>
+<p>Figure <a href="#fig:forest" data-reference-type="ref"
+data-reference="fig:forest">1</a> and Table <a href="#tab:main"
+data-reference-type="ref" data-reference="tab:main">3</a> report the
+real graph’s advantage in daily rank IC over each placebo. Against the
+three structure-matched placebos (random, degree-preserving and
+correlation-matched), 12 of 12 comparisons across 4 model-market cells
+show no difference after the Benjamini-Hochberg correction.</p>
+<figure id="fig:forest">
+<img src="figures/fig_forest.png" />
+<figcaption>Real graph minus placebo in daily rank IC: mean over paired
+seeds (20 for RSR, ten for HIST and RT-GCN) and test days, with 95%
+two-way bootstrap intervals (seeds and day blocks resampled).
+Structure-matched placebos: random, degree-preserving,
+correlation-matched. Filled markers: Benjamini-Hochberg <span
+class="math inline">\(q&lt;0.05\)</span>.</figcaption>
+</figure>
+<div id="tab:main">
+<div class="table-wrap"><table>
+<caption>Real graph minus placebo, daily rank IC. Intervals: two-way
+bootstrap over seeds and ten-day blocks of test days (5,000 resamples).
+<span class="math inline">\(p\)</span>: raw two-sided bootstrap <span
+class="math inline">\(p\)</span>-value; <span
+class="math inline">\(q\)</span>: Benjamini-Hochberg within the
+model-market cell for rank IC.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market (model, graph)</th>
+<th style="text-align: left;">Placebo</th>
+<th style="text-align: right;"><span
+class="math inline">\(\Delta\)</span> rank IC</th>
+<th style="text-align: right;">95% CI</th>
+<th style="text-align: right;"><span
+class="math inline">\(p\)</span></th>
+<th style="text-align: right;"><span
+class="math inline">\(q_{\mathrm{BH}}\)</span></th>
+<th style="text-align: left;">Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR-I, industry)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0010</td>
+<td style="text-align: right;">[-0.0053, 0.0037]</td>
+<td style="text-align: right;">0.644</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.0011</td>
+<td style="text-align: right;">[-0.0059, 0.0037]</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-0.0018</td>
+<td style="text-align: right;">[-0.0060, 0.0027]</td>
+<td style="text-align: right;">0.420</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-0.0026</td>
+<td style="text-align: right;">[-0.0095, 0.0042]</td>
+<td style="text-align: right;">0.436</td>
+<td style="text-align: right;">0.646</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-0.0046</td>
+<td style="text-align: right;">[-0.0084, -0.0004]</td>
+<td style="text-align: right;">0.037</td>
+<td style="text-align: right;">0.124</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-0.0111</td>
+<td style="text-align: right;">[-0.0219, -0.0005]</td>
+<td style="text-align: right;">0.041</td>
+<td style="text-align: right;">0.124</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ (RSR-E, Wikidata)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0005</td>
+<td style="text-align: right;">[-0.0032, 0.0017]</td>
+<td style="text-align: right;">0.759</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.0002</td>
+<td style="text-align: right;">[-0.0014, 0.0019]</td>
+<td style="text-align: right;">0.768</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.0012</td>
+<td style="text-align: right;">[0.0000, 0.0024]</td>
+<td style="text-align: right;">0.046</td>
+<td style="text-align: right;">0.138</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.0254</td>
+<td style="text-align: right;">[0.0104, 0.0409]</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;">0.005</td>
+<td style="text-align: left;">real better</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-0.0005</td>
+<td style="text-align: right;">[-0.0041, 0.0033]</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-0.0042</td>
+<td style="text-align: right;">[-0.0155, 0.0075]</td>
+<td style="text-align: right;">0.450</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST, concepts)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">[-0.0022, 0.0025]</td>
+<td style="text-align: right;">0.975</td>
+<td style="text-align: right;">0.975</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.0004</td>
+<td style="text-align: right;">[-0.0013, 0.0021]</td>
+<td style="text-align: right;">0.570</td>
+<td style="text-align: right;">0.712</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-0.0011</td>
+<td style="text-align: right;">[-0.0027, 0.0004]</td>
+<td style="text-align: right;">0.137</td>
+<td style="text-align: right;">0.244</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.0021</td>
+<td style="text-align: right;">[-0.0008, 0.0051]</td>
+<td style="text-align: right;">0.146</td>
+<td style="text-align: right;">0.244</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.0115</td>
+<td style="text-align: right;">[0.0063, 0.0167]</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: left;">real better</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RT-GCN, industry and
+Wikidata)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">[-0.0019, 0.0028]</td>
+<td style="text-align: right;">0.640</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.0014</td>
+<td style="text-align: right;">[-0.0045, 0.0012]</td>
+<td style="text-align: right;">0.279</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.0008</td>
+<td style="text-align: right;">[-0.0025, 0.0045]</td>
+<td style="text-align: right;">0.634</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.0013</td>
+<td style="text-align: right;">[-0.0030, 0.0074]</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.0008</td>
+<td style="text-align: right;">[-0.0016, 0.0038]</td>
+<td style="text-align: right;">0.563</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: left;">no difference</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 id="where-the-gains-come-from">Where the gains come from</h2>
+<p>On NASDAQ the Wikidata graph beats uniform mixing by 0.025 in rank IC
+(<span class="math inline">\(q=0.005\)</span>), while random,
+degree-preserving and correlation-matched placebos match it, and so does
+the graph without cross-firm links (<span
+class="math inline">\(-0.0005\)</span>). Uniform mixing lowers accuracy;
+sparse links, real or random, add nothing over none. On CSI300, HIST
+beats its LSTM base by 0.012 in rank IC (<span
+class="math inline">\(q&lt;0.001\)</span>), yet every concept placebo,
+including the graph without concept links, retains that gain: the
+link-free graph keeps about 80% of it. HIST’s improvement over the LSTM
+comes from its additional modules and their training, not from the
+predefined concepts. An LSTM trained further with HIST’s optimisation
+budget gains 0.005 (95% CI [0.003, 0.007]), and HIST still exceeds it by
+0.007 ([0.001, 0.012]). With predefined links removed, HIST’s learned
+hidden-concept module is its remaining channel for cross-stock
+information, a learned graph in place of the curated one, as adaptive
+graphs are in spatio-temporal forecasting <span class="citation"
+data-cites="bai2020agcrn">(<a href="#ref-bai2020agcrn"
+role="doc-biblioref">Bai et al. 2020</a>)</span>. Holding out the
+validation period strictly from the RSR training windows leaves the
+verdict against the random placebo unchanged in both markets (ten
+seeds). On NYSE no condition differs from the real graph after
+correction; the raw intervals against the graph without cross-firm links
+and the no-graph base model lie below zero (<span
+class="math inline">\(q=0.12\)</span>). RT-GCN on NASDAQ, which uses a
+dense graph combining industry and Wikidata relations, matches every
+placebo, including the graph without cross-firm links: the time-aware
+relation weighting adds no forecasting value with the real relations,
+with random ones, or with none. With seeds resampled and the family
+corrected for multiple testing, no comparison with a structure-matched
+placebo is significant. The smallest raw <span
+class="math inline">\(p\)</span>-value, NASDAQ against the
+correlation-matched placebo (0.0012, 95% CI [0.0000, 0.0024], <span
+class="math inline">\(p=0.046\)</span>, <span
+class="math inline">\(q=0.14\)</span>), reflects a placebo that
+forecasts slightly worse than random wiring: against the random and
+degree-preserving placebos the real graph’s advantage is <span
+class="math inline">\(-0.0005\)</span> and <span
+class="math inline">\(0.0002\)</span>. The two largest point estimates
+against structure-matched placebos (NYSE correlation-matched and NASDAQ
+RT-GCN degree-preserving) favour the placebo. The verdicts are stable
+over time: computed separately on the first and second half of each test
+period, the real graph beats no structure-matched placebo in either
+half.</p>
+<p>The placebos differ in how they distribute links. The
+degree-preserving placebo keeps every firm’s number of links exactly
+(NYSE: maximum 499, median 29, as in the real graph). The random placebo
+flattens the distribution (NYSE maximum 199), and the
+correlation-matched placebo concentrates links on highly co-moving firms
+(NYSE maximum 1,008, 11.5% of firms without links). Agreement across
+placebos with such different degree distributions shows that the
+equivalence does not depend on one particular graph shape.</p>
+<h2 id="the-positive-control">The positive control</h2>
+<p>Figure <a href="#fig:dose" data-reference-type="ref"
+data-reference="fig:dose">2</a> and Table <a href="#tab:plant"
+data-reference-type="ref" data-reference="tab:plant">5</a> report the
+positive control for RSR. On NYSE the real graph’s advantage over each
+structure-matched placebo grows with <span
+class="math inline">\(\rho\)</span>; at <span
+class="math inline">\(\rho=0.02\)</span> and <span
+class="math inline">\(0.05\)</span> the intervals include zero in both
+markets. At <span class="math inline">\(\rho=0.10\)</span> the real
+graph beats every graph placebo in both markets and, on NYSE, the
+no-graph base model. The oracle rank IC of the planted term is 0.08 at
+<span class="math inline">\(\rho=0.05\)</span> and 0.15 at <span
+class="math inline">\(\rho=0.10\)</span> on NYSE; the daily rank
+correlation of the strongest models in the Qlib CSI300 benchmark lies
+between 0.05 and 0.07 <span class="citation"
+data-cites="yang2020qlib">(<a href="#ref-yang2020qlib"
+role="doc-biblioref">Yang et al. 2020</a>)</span>. The test therefore
+detects relational signal whose own ranking power exceeds that of
+published forecasters, and the minimum detectable effects in Table <a
+href="#tab:eq" data-reference-type="ref" data-reference="tab:eq">9</a>
+state its resolution in every cell. The realistic return-based signal at
+<span class="math inline">\(\rho=0.05\)</span> on NYSE produces a
+real-graph advantage of 0.003 against each structure-matched placebo
+(Table <a href="#tab:plantmodels" data-reference-type="ref"
+data-reference="tab:plantmodels">4</a>), with intervals that include
+zero whether or not seeds are resampled, and the trained RSR models
+barely track the planted term: their test predictions correlate <span
+class="math inline">\(+0.003\)</span> with it under the real graph and
+<span class="math inline">\(-0.015\)</span> under each placebo (20
+seeds, pooled over planted test cells).</p>
+<p>The same control applied to HIST and RT-GCN separates a different
+explanation. At <span class="math inline">\(\rho=0.10\)</span>, the real
+graph does not beat any structure-matched placebo for either model,
+although the planted term carries ranking information: its oracle rank
+IC on RT-GCN’s test days is 0.09, more than twice RT-GCN’s own rank IC.
+Planting leaves their real-graph rank IC unchanged (HIST 0.066 unplanted
+and 0.064 planted; RT-GCN 0.037 and 0.038), and RT-GCN’s predictions
+correlate <span class="math inline">\(+0.002\)</span> with the planted
+term under every graph, the real one included. These models, trained
+with their published recipes, do not learn a neighbour-mean lead-lag
+signal of this form, although it exists in the data and runs along their
+own graph. For them, placebo equivalence shows that the trained model
+does not use this kind of relational signal; for RSR, which separates
+the real graph from every placebo once a strong planted signal runs
+along it, placebo equivalence shows that the published graphs carry no
+relational signal above the minimum detectable effect.</p>
+<div id="tab:plantmodels">
+<div class="table-wrap"><table>
+<caption>Positive control across models: real graph minus
+structure-matched placebo, daily rank IC (RSR 20 seeds, HIST and RT-GCN
+ten). <span class="math inline">\(^{*}\)</span>: Benjamini-Hochberg
+<span class="math inline">\(q&lt;0.05\)</span> within the cell, two-way
+bootstrap.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Model, market</th>
+<th style="text-align: left;">Planted source</th>
+<th style="text-align: left;"><span
+class="math inline">\(\rho\)</span></th>
+<th style="text-align: right;">Random</th>
+<th style="text-align: right;">Degree-preserving</th>
+<th style="text-align: right;">Correlation-matched</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">RSR-I, NYSE</td>
+<td style="text-align: left;">embedding</td>
+<td style="text-align: left;">0.05</td>
+<td style="text-align: right;">0.0063</td>
+<td style="text-align: right;">0.0077</td>
+<td style="text-align: right;">0.0052</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">embedding</td>
+<td style="text-align: left;">0.10</td>
+<td style="text-align: right;">0.0289<span
+class="math inline">\(^{*}\)</span></td>
+<td style="text-align: right;">0.0282<span
+class="math inline">\(^{*}\)</span></td>
+<td style="text-align: right;">0.0255<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.05</td>
+<td style="text-align: right;">0.0031</td>
+<td style="text-align: right;">0.0030</td>
+<td style="text-align: right;">0.0028</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">HIST, CSI300</td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.05</td>
+<td style="text-align: right;">-0.0003</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">-0.0003</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.10</td>
+<td style="text-align: right;">0.0007</td>
+<td style="text-align: right;">0.0010</td>
+<td style="text-align: right;">0.0005</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RT-GCN, NASDAQ</td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.05</td>
+<td style="text-align: right;">0.0001</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">-0.0007</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.10</td>
+<td style="text-align: right;">0.0007</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">0.0004</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<figure id="fig:dose">
+<img src="figures/fig_dose.png" />
+<figcaption>Positive control: real graph minus placebo in daily rank IC
+as a function of the planted relational signal strength <span
+class="math inline">\(\rho\)</span> (<span
+class="math inline">\(\rho=0\)</span> is the unplanted experiment).
+Bars: 95% two-way bootstrap intervals (seeds and day blocks). RSR only.
+Filled markers: Benjamini-Hochberg <span
+class="math inline">\(q&lt;0.05\)</span>.</figcaption>
+</figure>
+<div id="tab:plant">
+<div class="table-wrap"><table>
+<caption>Positive control: real graph minus placebo, daily rank IC, by
+planted strength <span class="math inline">\(\rho\)</span> (20 seeds per
+condition). <span class="math inline">\(^{*}\)</span>:
+Benjamini-Hochberg <span class="math inline">\(q&lt;0.05\)</span> within
+each strength.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market</th>
+<th style="text-align: left;">Placebo</th>
+<th style="text-align: right;"><span
+class="math inline">\(\rho=0\)</span></th>
+<th style="text-align: right;"><span
+class="math inline">\(\rho=0.02\)</span></th>
+<th style="text-align: right;"><span
+class="math inline">\(\rho=0.05\)</span></th>
+<th style="text-align: right;"><span
+class="math inline">\(\rho=0.10\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0010</td>
+<td style="text-align: right;">0.0023</td>
+<td style="text-align: right;">0.0063</td>
+<td style="text-align: right;">0.0289<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.0011</td>
+<td style="text-align: right;">0.0037</td>
+<td style="text-align: right;">0.0077</td>
+<td style="text-align: right;">0.0282<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-0.0018</td>
+<td style="text-align: right;">0.0030</td>
+<td style="text-align: right;">0.0052</td>
+<td style="text-align: right;">0.0255<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-0.0026</td>
+<td style="text-align: right;">0.0004</td>
+<td style="text-align: right;">0.0060</td>
+<td style="text-align: right;">0.0333<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-0.0046</td>
+<td style="text-align: right;">-0.0007</td>
+<td style="text-align: right;">0.0032</td>
+<td style="text-align: right;">0.0286<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NYSE</td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-0.0111</td>
+<td style="text-align: right;">-0.0072</td>
+<td style="text-align: right;">-0.0019</td>
+<td style="text-align: right;">0.0232<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0005</td>
+<td style="text-align: right;">0.0008</td>
+<td style="text-align: right;">0.0007</td>
+<td style="text-align: right;">0.0056<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.0002</td>
+<td style="text-align: right;">-0.0000</td>
+<td style="text-align: right;">-0.0002</td>
+<td style="text-align: right;">0.0022<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.0012</td>
+<td style="text-align: right;">0.0006</td>
+<td style="text-align: right;">0.0023</td>
+<td style="text-align: right;">0.0070<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.0254<span
+class="math inline">\(^{*}\)</span></td>
+<td style="text-align: right;">0.0274<span
+class="math inline">\(^{*}\)</span></td>
+<td style="text-align: right;">0.0278<span
+class="math inline">\(^{*}\)</span></td>
+<td style="text-align: right;">0.0337<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-0.0005</td>
+<td style="text-align: right;">-0.0002</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">0.0052<span
+class="math inline">\(^{*}\)</span></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ</td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-0.0042</td>
+<td style="text-align: right;">-0.0043</td>
+<td style="text-align: right;">-0.0034</td>
+<td style="text-align: right;">0.0010</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 id="forecast-comparison-tests">Forecast-comparison tests</h2>
+<p>Table <a href="#tab:dm" data-reference-type="ref"
+data-reference="tab:dm">6</a> reports Diebold-Mariano tests with
+Newey-West variance and the Harvey-Leybourne-Newbold correction,
+Giacomini-White conditional tests with the lagged loss differential as
+instrument, and membership of the 90% model confidence set. Both use the
+daily loss averaged over the seeds (20 for RSR, ten for HIST and
+RT-GCN), which compares two seed ensembles; we also run the test for
+every seed separately, which compares single deployed models. With loss
+equal to minus the rank IC, the real graph has equal accuracy to the
+random and degree-preserving placebos for all three models and all three
+markets; it is more accurate than uniform mixing on NASDAQ and than the
+LSTM base on CSI300, matching the diagnosis above, and the
+Diebold-Mariano test also ranks it above the NASDAQ correlation-matched
+placebo, the placebo that forecasts slightly worse than random wiring
+(difference 0.0012 in rank IC, <span
+class="math inline">\(q=0.013\)</span>; Giacomini-White <span
+class="math inline">\(q=0.06\)</span>). On NYSE the Diebold-Mariano test
+ranks the real graph below the graph without cross-firm links and the
+no-graph base model (<span class="math inline">\(q=0.036\)</span>;
+Giacomini-White <span class="math inline">\(q=0.09\)</span>), so its
+links do not help there. The Giacomini-White test finds no difference
+between the real graph and any structure-matched placebo in any cell.
+For the nested comparison of each RSR variant with its no-graph base
+model, the <span class="citation"
+data-cites="clark2007approximately">Clark and West (<a
+href="#ref-clark2007approximately" role="doc-biblioref">2007</a>)</span>
+test finds on NASDAQ that every variant with a relational module, the
+real graph, every placebo and the graph without cross-firm links alike,
+improves on the base model in squared error (<span
+class="math inline">\(q&lt;0.002\)</span>), and on NYSE that none does;
+the relational module helps on NASDAQ regardless of the graph it is
+given. Per seed (Table <a href="#tab:dmseed" data-reference-type="ref"
+data-reference="tab:dmseed">7</a>), the real graph is more accurate than
+a random or degree-preserving placebo in at most 3 of 20 seeds (RSR) or
+2 of 10 (HIST, RT-GCN) and less accurate in up to 5 of 20, with no
+consistent direction; against the NASDAQ correlation-matched placebo it
+is more accurate in 10 of 20 seeds. With squared-error loss, the daily
+loss differentials are small but very stable, so they are highly
+significant, and their sign changes across placebos. They reflect the
+scale of the predicted returns, not ranking: RSR’s predicted returns
+have a standard deviation of 0.0003 to 0.0007 on NYSE and 0.0014 to
+0.0057 on NASDAQ, against 0.015 and 0.019 for realised returns, so
+squared error is almost entirely the variance of the returns and moves
+with small differences in prediction spread. RT-GCN’s predicted returns
+are over-dispersed (standard deviation 0.42 to 0.49 against 0.033), and
+the real graph produces among the most dispersed predictions, which is
+why every placebo attains a lower squared error than the real graph. The
+model confidence set never singles out the real graph. On NASDAQ it
+keeps the real graph together with the random and degree-preserving
+placebos, the graph without cross-firm links and the no-graph base
+model. In the other three cells it excludes the real graph: on NYSE the
+no-graph base model has the highest rank IC, on CSI300 the
+correlation-matched placebo is the only member, and for RT-GCN the set
+keeps the degree-preserving and uniform-mixing placebos.</p>
+<div id="tab:dm">
+<div class="table-wrap"><table>
+<caption>Diebold-Mariano statistics (positive: the real graph has higher
+loss) with Newey-West variance and Harvey-Leybourne-Newbold correction,
+Giacomini-White conditional statistics (instruments: constant and lagged
+loss differential), both Benjamini-Hochberg adjusted, and membership of
+the 90% model confidence set (MCS <span
+class="math inline">\(p\)</span>-value in parentheses; loss <span
+class="math inline">\(=-\)</span>rank IC, stationary
+bootstrap).</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Market</td>
+<td style="text-align: left;">Condition</td>
+<td colspan="2" style="text-align: center;">DM, loss <span
+class="math inline">\(=-\)</span>rank IC</td>
+<td colspan="2" style="text-align: center;">GW, loss <span
+class="math inline">\(=-\)</span>rank IC</td>
+<td colspan="2" style="text-align: center;">DM, loss <span
+class="math inline">\(=\)</span> MSE</td>
+<td style="text-align: center;">In 90% MCS</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: right;">stat</td>
+<td style="text-align: right;"><span
+class="math inline">\(q_{\mathrm{BH}}\)</span></td>
+<td style="text-align: right;"><span
+class="math inline">\(\chi^2_2\)</span></td>
+<td style="text-align: right;"><span
+class="math inline">\(q_{\mathrm{BH}}\)</span></td>
+<td style="text-align: right;">stat</td>
+<td style="text-align: right;"><span
+class="math inline">\(q_{\mathrm{BH}}\)</span></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR)</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.01)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: right;">0.586</td>
+<td style="text-align: right;">0.30</td>
+<td style="text-align: right;">0.863</td>
+<td style="text-align: right;">23.53</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.02)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.61</td>
+<td style="text-align: right;">0.586</td>
+<td style="text-align: right;">0.49</td>
+<td style="text-align: right;">0.863</td>
+<td style="text-align: right;">0.50</td>
+<td style="text-align: right;">0.660</td>
+<td style="text-align: center;">no (0.01)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">1.06</td>
+<td style="text-align: right;">0.438</td>
+<td style="text-align: right;">3.73</td>
+<td style="text-align: right;">0.310</td>
+<td style="text-align: right;">9.13</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">1.08</td>
+<td style="text-align: right;">0.438</td>
+<td style="text-align: right;">2.30</td>
+<td style="text-align: right;">0.474</td>
+<td style="text-align: right;">-0.44</td>
+<td style="text-align: right;">0.660</td>
+<td style="text-align: center;">yes (0.10)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">2.62</td>
+<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">7.75</td>
+<td style="text-align: right;">0.091</td>
+<td style="text-align: right;">5.72</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">yes (0.16)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">2.53</td>
+<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">7.00</td>
+<td style="text-align: right;">0.091</td>
+<td style="text-align: right;">3.70</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">yes (1.00)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RSR)</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">yes (0.76)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.62</td>
+<td style="text-align: right;">0.760</td>
+<td style="text-align: right;">0.27</td>
+<td style="text-align: right;">0.956</td>
+<td style="text-align: right;">0.72</td>
+<td style="text-align: right;">0.564</td>
+<td style="text-align: center;">yes (0.76)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.37</td>
+<td style="text-align: right;">0.760</td>
+<td style="text-align: right;">0.40</td>
+<td style="text-align: right;">0.956</td>
+<td style="text-align: right;">0.22</td>
+<td style="text-align: right;">0.824</td>
+<td style="text-align: center;">yes (0.76)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-2.89</td>
+<td style="text-align: right;">0.013</td>
+<td style="text-align: right;">7.86</td>
+<td style="text-align: right;">0.059</td>
+<td style="text-align: right;">1.13</td>
+<td style="text-align: right;">0.387</td>
+<td style="text-align: center;">no (0.05)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-3.86</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;">13.22</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">-8.21</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.31</td>
+<td style="text-align: right;">0.760</td>
+<td style="text-align: right;">0.09</td>
+<td style="text-align: right;">0.956</td>
+<td style="text-align: right;">3.89</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">yes (0.76)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">0.738</td>
+<td style="text-align: right;">4.09</td>
+<td style="text-align: right;">0.259</td>
+<td style="text-align: right;">-2.87</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: center;">yes (1.00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST)</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.03)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.02</td>
+<td style="text-align: right;">0.981</td>
+<td style="text-align: right;">2.94</td>
+<td style="text-align: right;">0.288</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.03)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.79</td>
+<td style="text-align: right;">0.534</td>
+<td style="text-align: right;">0.70</td>
+<td style="text-align: right;">0.706</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.02)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">2.05</td>
+<td style="text-align: right;">0.101</td>
+<td style="text-align: right;">4.41</td>
+<td style="text-align: right;">0.241</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">yes (1.00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-1.76</td>
+<td style="text-align: right;">0.131</td>
+<td style="text-align: right;">3.87</td>
+<td style="text-align: right;">0.241</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.01)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-4.74</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;">21.88</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.00)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ (RT-GCN)</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: center;">no (0.06)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.82</td>
+<td style="text-align: right;">0.490</td>
+<td style="text-align: right;">1.37</td>
+<td style="text-align: right;">0.503</td>
+<td style="text-align: right;">8.63</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.01)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">2.06</td>
+<td style="text-align: right;">0.205</td>
+<td style="text-align: right;">5.37</td>
+<td style="text-align: right;">0.341</td>
+<td style="text-align: right;">8.96</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">yes (1.00)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-1.57</td>
+<td style="text-align: right;">0.297</td>
+<td style="text-align: right;">2.52</td>
+<td style="text-align: right;">0.503</td>
+<td style="text-align: right;">8.53</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.06)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-0.69</td>
+<td style="text-align: right;">0.490</td>
+<td style="text-align: right;">2.17</td>
+<td style="text-align: right;">0.503</td>
+<td style="text-align: right;">11.93</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">yes (0.14)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-1.20</td>
+<td style="text-align: right;">0.388</td>
+<td style="text-align: right;">1.73</td>
+<td style="text-align: right;">0.503</td>
+<td style="text-align: right;">9.11</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: center;">no (0.06)</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div id="tab:dmseed">
+<div class="table-wrap"><table>
+<caption>Diebold-Mariano tests per seed (loss <span
+class="math inline">\(=-\)</span>rank IC): median statistic over the
+seeds and the number of seeds in which the real graph or the placebo is
+significantly more accurate at the 5% level.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market</th>
+<th style="text-align: left;">Placebo</th>
+<th style="text-align: right;">Median DM</th>
+<th style="text-align: right;">Real better</th>
+<th style="text-align: right;">Placebo better</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">1 of 20</td>
+<td style="text-align: right;">4 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.44</td>
+<td style="text-align: right;">2 of 20</td>
+<td style="text-align: right;">5 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.33</td>
+<td style="text-align: right;">1 of 20</td>
+<td style="text-align: right;">3 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0 of 20</td>
+<td style="text-align: right;">3 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.78</td>
+<td style="text-align: right;">0 of 20</td>
+<td style="text-align: right;">6 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">1.52</td>
+<td style="text-align: right;">0 of 20</td>
+<td style="text-align: right;">9 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ (RSR)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">3 of 20</td>
+<td style="text-align: right;">3 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.76</td>
+<td style="text-align: right;">1 of 20</td>
+<td style="text-align: right;">2 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-1.99</td>
+<td style="text-align: right;">10 of 20</td>
+<td style="text-align: right;">0 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-3.19</td>
+<td style="text-align: right;">17 of 20</td>
+<td style="text-align: right;">0 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">0 of 20</td>
+<td style="text-align: right;">3 of 20</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.31</td>
+<td style="text-align: right;">0 of 20</td>
+<td style="text-align: right;">6 of 20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.18</td>
+<td style="text-align: right;">2 of 10</td>
+<td style="text-align: right;">2 of 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.65</td>
+<td style="text-align: right;">1 of 10</td>
+<td style="text-align: right;">0 of 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0 of 10</td>
+<td style="text-align: right;">1 of 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-1.33</td>
+<td style="text-align: right;">3 of 10</td>
+<td style="text-align: right;">0 of 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">-3.59</td>
+<td style="text-align: right;">10 of 10</td>
+<td style="text-align: right;">0 of 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RT-GCN)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.15</td>
+<td style="text-align: right;">1 of 10</td>
+<td style="text-align: right;">0 of 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.73</td>
+<td style="text-align: right;">0 of 10</td>
+<td style="text-align: right;">2 of 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-1.38</td>
+<td style="text-align: right;">2 of 10</td>
+<td style="text-align: right;">2 of 10</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">-0.65</td>
+<td style="text-align: right;">1 of 10</td>
+<td style="text-align: right;">1 of 10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">-0.73</td>
+<td style="text-align: right;">0 of 10</td>
+<td style="text-align: right;">1 of 10</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 id="economic-value">Economic value</h2>
+<p>Table <a href="#tab:port" data-reference-type="ref"
+data-reference="tab:port">8</a> reports daily-rebalanced equal-weight
+long portfolios of the top-ranked stocks, with equal capital across the
+seed portfolios, net of 5 basis points per side for RSR and RT-GCN
+(turnover computed from the saved predictions) and gross for HIST, whose
+saved outputs contain no positions. Sharpe-ratio differences are tested
+with a circular block bootstrap over days and corrected within each
+model, market and portfolio. For the top-5 net portfolios no difference
+survives the correction; on NYSE the graph placebos reach net Sharpe
+ratios of 0.98 to 1.21 against 0.56 for the real graph (0.47 for the
+no-graph base model). Before costs, every NYSE graph placebo has a
+higher top-5 Sharpe ratio than the real graph (<span
+class="math inline">\(q\le0.039\)</span>); on NASDAQ the real graph’s
+top-10 net portfolio beats uniform mixing and the no-graph base model
+(<span class="math inline">\(q=0.007\)</span>). The real NYSE industry
+graph trades least, with daily top-5 turnover of 0.29 against 0.46 to
+0.59 for the alternatives. RT-GCN rankings change slowly under every
+graph (daily top-5 turnover 0.04 to 0.05), because its scores are driven
+by predicted price levels.</p>
+<div id="tab:port">
+<div class="table-wrap"><table>
+<caption>Annualised performance of top-<span
+class="math inline">\(k\)</span> portfolios. <span
+class="math inline">\(\Delta\)</span>Sharpe <span
+class="math inline">\(q\)</span>: circular block bootstrap over test
+days of the Sharpe difference between the real graph and the condition,
+Benjamini-Hochberg adjusted within each model, market and portfolio.
+Turnover excludes the entry day.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market</th>
+<th style="text-align: left;">Portfolio</th>
+<th style="text-align: left;">Condition</th>
+<th style="text-align: right;">Ann. return</th>
+<th style="text-align: right;">Ann. vol.</th>
+<th style="text-align: right;">Sharpe</th>
+<th style="text-align: right;">Turnover</th>
+<th style="text-align: right;"><span
+class="math inline">\(\Delta\)</span>Sharpe <span
+class="math inline">\(q_{\mathrm{BH}}\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR)</td>
+<td style="text-align: left;">Top-5, net 5 bp</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">0.207</td>
+<td style="text-align: right;">0.367</td>
+<td style="text-align: right;">0.56</td>
+<td style="text-align: right;">0.29</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.318</td>
+<td style="text-align: right;">0.326</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: right;">0.223</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.406</td>
+<td style="text-align: right;">0.336</td>
+<td style="text-align: right;">1.21</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: right;">0.175</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.342</td>
+<td style="text-align: right;">0.324</td>
+<td style="text-align: right;">1.05</td>
+<td style="text-align: right;">0.54</td>
+<td style="text-align: right;">0.223</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.317</td>
+<td style="text-align: right;">0.303</td>
+<td style="text-align: right;">1.04</td>
+<td style="text-align: right;">0.53</td>
+<td style="text-align: right;">0.223</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.360</td>
+<td style="text-align: right;">0.330</td>
+<td style="text-align: right;">1.09</td>
+<td style="text-align: right;">0.57</td>
+<td style="text-align: right;">0.223</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.124</td>
+<td style="text-align: right;">0.263</td>
+<td style="text-align: right;">0.47</td>
+<td style="text-align: right;">0.59</td>
+<td style="text-align: right;">0.896</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RSR)</td>
+<td style="text-align: left;">Top-5, net 5 bp</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">0.445</td>
+<td style="text-align: right;">0.240</td>
+<td style="text-align: right;">1.85</td>
+<td style="text-align: right;">0.39</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.267</td>
+<td style="text-align: right;">0.226</td>
+<td style="text-align: right;">1.18</td>
+<td style="text-align: right;">0.34</td>
+<td style="text-align: right;">0.352</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.398</td>
+<td style="text-align: right;">0.232</td>
+<td style="text-align: right;">1.72</td>
+<td style="text-align: right;">0.38</td>
+<td style="text-align: right;">0.352</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.382</td>
+<td style="text-align: right;">0.238</td>
+<td style="text-align: right;">1.61</td>
+<td style="text-align: right;">0.39</td>
+<td style="text-align: right;">0.672</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.167</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.59</td>
+<td style="text-align: right;">0.114</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.284</td>
+<td style="text-align: right;">0.235</td>
+<td style="text-align: right;">1.21</td>
+<td style="text-align: right;">0.41</td>
+<td style="text-align: right;">0.352</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">0.202</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.52</td>
+<td style="text-align: right;">0.114</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST)</td>
+<td style="text-align: left;">Top-50, gross</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">0.381</td>
+<td style="text-align: right;">0.222</td>
+<td style="text-align: right;">1.72</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.384</td>
+<td style="text-align: right;">0.223</td>
+<td style="text-align: right;">1.72</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">0.873</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.387</td>
+<td style="text-align: right;">0.221</td>
+<td style="text-align: right;">1.75</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">0.352</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.395</td>
+<td style="text-align: right;">0.223</td>
+<td style="text-align: right;">1.77</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">0.252</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.382</td>
+<td style="text-align: right;">0.221</td>
+<td style="text-align: right;">1.73</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">0.873</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.371</td>
+<td style="text-align: right;">0.218</td>
+<td style="text-align: right;">1.70</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">0.873</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NASDAQ (RT-GCN)</td>
+<td style="text-align: left;">Top-5, net 5 bp</td>
+<td style="text-align: left;">Real graph</td>
+<td style="text-align: right;">0.738</td>
+<td style="text-align: right;">0.677</td>
+<td style="text-align: right;">1.09</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.794</td>
+<td style="text-align: right;">0.669</td>
+<td style="text-align: right;">1.19</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.698</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.719</td>
+<td style="text-align: right;">0.673</td>
+<td style="text-align: right;">1.07</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.763</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.713</td>
+<td style="text-align: right;">0.680</td>
+<td style="text-align: right;">1.05</td>
+<td style="text-align: right;">0.03</td>
+<td style="text-align: right;">0.763</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Uniform mixing</td>
+<td style="text-align: right;">0.823</td>
+<td style="text-align: right;">0.657</td>
+<td style="text-align: right;">1.25</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.698</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">No cross-firm links</td>
+<td style="text-align: right;">0.877</td>
+<td style="text-align: right;">0.668</td>
+<td style="text-align: right;">1.31</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">0.460</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h2 id="equivalence-bounds">Equivalence bounds</h2>
+<p>Failing to reject a difference is not evidence of equivalence.
+Table <a href="#tab:eq" data-reference-type="ref"
+data-reference="tab:eq">9</a> reports, for the structure-matched
+placebos, 90% two-way bootstrap intervals, the two one-sided test of
+<span class="citation" data-cites="schuirmann1987tost">Schuirmann (<a
+href="#ref-schuirmann1987tost" role="doc-biblioref">1987</a>)</span> at
+the margin <span class="math inline">\(\delta=0.005\)</span> in rank IC
+(a tenth of the rank IC of the strongest published CSI300 models), the
+smallest margin <span class="math inline">\(\delta_{\min}\)</span> at
+which equivalence holds, and the minimum detectable effect (MDE), the
+advantage that the primary test detects with 80% power at the 5% level.
+Against the random placebo the real graph’s advantage lies within <span
+class="math inline">\(\pm0.0047\)</span> (NYSE, RSR), <span
+class="math inline">\(\pm0.0027\)</span> (NASDAQ, RSR), <span
+class="math inline">\(\pm0.0020\)</span> (CSI300, HIST) and <span
+class="math inline">\(\pm0.0024\)</span> (NASDAQ, RT-GCN) in rank IC,
+and equivalence at <span class="math inline">\(\delta=0.005\)</span>
+holds in all four cells. Relative to each model’s own rank IC these
+bounds are 9% (NASDAQ, RSR), 3% (CSI300) and 6% (NASDAQ, RT-GCN); on
+NYSE the RSR model’s rank IC is itself close to zero (0.004), so the
+NYSE bound is as large as the model’s whole signal and the NYSE cell
+carries the least weight. The minimum detectable advantage over the
+random placebo is 0.006 (NYSE), 0.004 (NASDAQ), 0.003 (CSI300) and 0.003
+(RT-GCN). For both RSR markets the advantage that the <span
+class="math inline">\(\rho=0.10\)</span> planted signal produces against
+the random placebo (NYSE 0.029, NASDAQ 0.006) exceeds both the
+equivalence bound and the MDE.</p>
+<div id="tab:eq">
+<div class="table-wrap"><table>
+<caption>Equivalence against the structure-matched placebos: 90% two-way
+bootstrap interval of real minus placebo rank IC, the smallest symmetric
+margin <span class="math inline">\(\delta_{\min}\)</span> inside which
+equivalence holds, equivalence at <span
+class="math inline">\(\delta=0.005\)</span>, and the minimum detectable
+effect (MDE) of the primary test at 80% power.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Market</th>
+<th style="text-align: left;">Placebo</th>
+<th style="text-align: right;"><span
+class="math inline">\(\Delta\)</span> rank IC</th>
+<th style="text-align: right;">90% CI</th>
+<th style="text-align: right;"><span
+class="math inline">\(\delta_{\min}\)</span></th>
+<th style="text-align: center;">Equiv. at <span
+class="math inline">\(\delta=0.005\)</span></th>
+<th style="text-align: right;">MDE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0010</td>
+<td style="text-align: right;">[-0.0047, 0.0029]</td>
+<td style="text-align: right;">0.0047</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0064</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.0011</td>
+<td style="text-align: right;">[-0.0050, 0.0029]</td>
+<td style="text-align: right;">0.0050</td>
+<td style="text-align: center;">no</td>
+<td style="text-align: right;">0.0067</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-0.0018</td>
+<td style="text-align: right;">[-0.0054, 0.0019]</td>
+<td style="text-align: right;">0.0054</td>
+<td style="text-align: center;">no</td>
+<td style="text-align: right;">0.0062</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RSR)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">-0.0005</td>
+<td style="text-align: right;">[-0.0027, 0.0014]</td>
+<td style="text-align: right;">0.0027</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0035</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.0002</td>
+<td style="text-align: right;">[-0.0010, 0.0014]</td>
+<td style="text-align: right;">0.0014</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0021</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.0012</td>
+<td style="text-align: right;">[0.0002, 0.0022]</td>
+<td style="text-align: right;">0.0022</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0017</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: right;">[-0.0018, 0.0020]</td>
+<td style="text-align: right;">0.0020</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0033</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">0.0004</td>
+<td style="text-align: right;">[-0.0010, 0.0018]</td>
+<td style="text-align: right;">0.0018</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0024</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">-0.0011</td>
+<td style="text-align: right;">[-0.0024, 0.0001]</td>
+<td style="text-align: right;">0.0024</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0021</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RT-GCN)</td>
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">[-0.0015, 0.0024]</td>
+<td style="text-align: right;">0.0024</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0033</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Degree-preserving</td>
+<td style="text-align: right;">-0.0014</td>
+<td style="text-align: right;">[-0.0038, 0.0007]</td>
+<td style="text-align: right;">0.0038</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0039</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Correlation-matched</td>
+<td style="text-align: right;">0.0008</td>
+<td style="text-align: right;">[-0.0019, 0.0037]</td>
+<td style="text-align: right;">0.0037</td>
+<td style="text-align: center;">yes</td>
+<td style="text-align: right;">0.0048</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h1 id="sec:discussion">Discussion</h1>
+<h4 id="what-the-results-mean-for-model-builders">What the results mean
+for model builders</h4>
+<p>The three audited models improve on their simplest baselines in some
+markets, and the protocol shows why: through the relational module
+itself, which improves squared error on NASDAQ whatever graph it is
+given (RSR), or through architecture and training (CSI300, HIST).
+Neither mechanism requires the curated relation graph, and a random
+graph with the same number of links delivers the same forecasts.
+Industry, Wikidata and concept relations are cheap to collect, so their
+equivalence to placebos is not a cost argument; it is an argument about
+attribution and about where modelling effort pays off.</p>
+<h4 id="recommendations">Recommendations</h4>
+<p>We recommend that relational forecasting papers report, alongside the
+sequence-only baseline, the random and degree-preserving placebos with
+paired intervals, and that reviewers ask for them. The protocol requires
+no change to the model, only a different graph file and the same
+training script, and its cost is a small multiple of the original
+experiment: the full audit of RSR (280 training runs) cost under seven
+US dollars of cloud computing.</p>
+<h4 id="scope">Scope</h4>
+<p>The audit covers three published models in four model-market cells
+and their published test periods: 2017 for RSR (237 days), January 2017
+to July 2020 for HIST (871 days) and the authors’ 172-day test period
+for RT-GCN. Other relation types such as supply-chain links, other
+horizons and rolling test years are extensions with the same protocol;
+for RSR a second test year requires re-estimating the authors’
+pretrained sequential embeddings, whose selection uses the 2016
+validation year. The positive control plants one class of relational
+signal, a linear neighbour mean of a source visible in the input, and
+its thresholds refer to correlation with next-day returns in each test
+universe. The relation graphs are the snapshots released with each
+benchmark and may record links formed after the training period; such
+look-ahead can only favour the real graph over its placebos.</p>
+<h1 id="sec:conclusion">Conclusion</h1>
+<p>Placebo graphs separate what a relational forecaster learns from its
+graph from what it learns from its architecture. Applied to three
+published stock forecasters, they show that the curated relation graphs
+contribute no measurable forecasting value beyond random and
+degree-preserving graphs of the same size and shape, within equivalence
+bounds of 0.002 to 0.005 in daily rank correlation. A planted-signal
+control separates two reasons: RSR detects a strong planted neighbour
+signal, so its published graphs carry no relational signal above the
+test’s resolution, while HIST and RT-GCN do not learn such a signal even
+when it runs along their own graph. The protocol is cheap enough to
+become a routine part of evaluating relational forecasters.</p>
+<h1 class="unnumbered" id="data-and-code-availability">Data and code
+availability</h1>
+<p>Code to reproduce every table and figure, the placebo generators and
+the analysis scripts are available from the authors and will be released
+publicly with the published version.The data are the published datasets
+of the audited papers.</p>
+<h1 class="unnumbered"
+id="declaration-of-generative-ai-and-ai-assisted-technologies-in-the-manuscript-preparation-process">Declaration
+of generative AI and AI-assisted technologies in the manuscript
+preparation process</h1>
+<p>During the preparation of this work the authors used Claude
+(Anthropic) in order to write and run experiment code and to draft and
+edit the manuscript. After using this tool, the authors reviewed and
+edited the content as needed and take full responsibility for the
+content of the published article.</p>
+<h1 class="unnumbered" id="bibliography">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent"
+data-entry-spacing="0" role="list">
+<div id="ref-attali2024rewiring" class="csl-entry" role="listitem">
+Attali, Hugo, Davide Buscaldi, Nathalie Pernelle, and Fragkiskos D.
+Malliaros. 2024. <span>“Graph Rewiring in <span>GNN</span>s to Mitigate
+over-Squashing and over-Smoothing: A Survey.”</span> <a
+href="https://arxiv.org/abs/2411.17429">https://arxiv.org/abs/2411.17429</a>.
+</div>
+<div id="ref-bai2020agcrn" class="csl-entry" role="listitem">
+Bai, Lei, Lina Yao, Can Li, Xianzhi Wang, and Can Wang. 2020.
+<span>“Adaptive Graph Convolutional Recurrent Network for Traffic
+Forecasting.”</span> In <em>Advances in Neural Information Processing
+Systems (NeurIPS)</em>. Vol. 33. <a
+href="https://arxiv.org/abs/2007.02842">https://arxiv.org/abs/2007.02842</a>.
+</div>
+<div id="ref-bechlerspeicher2024gnns" class="csl-entry" role="listitem">
+Bechler-Speicher, Maya, Ido Amos, Ran Gilad-Bachrach, and Amir
+Globerson. 2024. <span>“Graph Neural Networks Use Graphs When They
+Shouldn’t.”</span> In <em>Proceedings of the 41st International
+Conference on Machine Learning (ICML)</em>. <a
+href="https://arxiv.org/abs/2309.04332">https://arxiv.org/abs/2309.04332</a>.
+</div>
+<div id="ref-benjamini1995fdr" class="csl-entry" role="listitem">
+Benjamini, Yoav, and Yosef Hochberg. 1995. <span>“Controlling the False
+Discovery Rate: A Practical and Powerful Approach to Multiple
+Testing.”</span> <em>Journal of the Royal Statistical Society: Series B
+(Methodological)</em> 57 (1): 289–300. <a
+href="https://doi.org/10.1111/j.2517-6161.1995.tb02031.x">https://doi.org/10.1111/j.2517-6161.1995.tb02031.x</a>.
+</div>
+<div id="ref-bsic2026network" class="csl-entry" role="listitem">
+Bocconi Students Investment Club (BSIC). 2026a. <span>“Trading the
+Network <span>I</span>: Do Graph Neural Networks Improve Equity Return
+Predictions?”</span> <a
+href="https://bsic.it/trading-the-network-i-do-graph-neural-networks-improve-equity-return-predictions/"
+class="uri">https://bsic.it/trading-the-network-i-do-graph-neural-networks-improve-equity-return-predictions/</a>.
+</div>
+<div id="ref-bsic2026network2" class="csl-entry" role="listitem">
+———. 2026b. <span>“Trading the Network <span>II</span>: What Should an
+Edge Mean?”</span> <a
+href="https://bsic.it/trading-the-network-ii-what-should-an-edge-mean/"
+class="uri">https://bsic.it/trading-the-network-ii-what-should-an-edge-mean/</a>.
+</div>
+<div id="ref-chen2018incorporating" class="csl-entry" role="listitem">
+Chen, Yingmei, Zhongyu Wei, and Xuanjing Huang. 2018.
+<span>“Incorporating Corporation Relationship via Graph Convolutional
+Neural Networks for Stock Price Prediction.”</span> In <em>Proceedings
+of the 27th ACM International Conference on Information and Knowledge
+Management</em>, 1655–58. <a
+href="https://doi.org/10.1145/3269206.3269269">https://doi.org/10.1145/3269206.3269269</a>.
+</div>
+<div id="ref-clark2007approximately" class="csl-entry" role="listitem">
+Clark, Todd E., and Kenneth D. West. 2007. <span>“Approximately Normal
+Tests for Equal Predictive Accuracy in Nested Models.”</span>
+<em>Journal of Econometrics</em> 138 (1): 291–311. <a
+href="https://doi.org/10.1016/j.jeconom.2006.05.023">https://doi.org/10.1016/j.jeconom.2006.05.023</a>.
+</div>
+<div id="ref-cohen2008economic" class="csl-entry" role="listitem">
+Cohen, Lauren, and Andrea Frazzini. 2008. <span>“Economic Links and
+Predictable Returns.”</span> <em>The Journal of Finance</em> 63 (4):
+1977–2011. <a
+href="https://doi.org/10.1111/j.1540-6261.2008.01379.x">https://doi.org/10.1111/j.1540-6261.2008.01379.x</a>.
+</div>
+<div id="ref-coupette2025rings" class="csl-entry" role="listitem">
+Coupette, Corinna, Jeremy Wayland, Emily Simons, and Bastian Rieck.
+2025. <span>“No Metric to Rule Them All: Toward Principled Evaluations
+of Graph-Learning Datasets.”</span> In <em>Proceedings of the 42nd
+International Conference on Machine Learning (ICML)</em>. <a
+href="https://arxiv.org/abs/2502.02379">https://arxiv.org/abs/2502.02379</a>.
+</div>
+<div id="ref-diebold1995comparing" class="csl-entry" role="listitem">
+Diebold, Francis X., and Roberto S. Mariano. 1995. <span>“Comparing
+Predictive Accuracy.”</span> <em>Journal of Business &amp; Economic
+Statistics</em> 13 (3): 253–63. <a
+href="https://doi.org/10.1080/07350015.1995.10524599">https://doi.org/10.1080/07350015.1995.10524599</a>.
+</div>
+<div id="ref-errica2020fair" class="csl-entry" role="listitem">
+Errica, Federico, Marco Podda, Davide Bacciu, and Alessio Micheli. 2020.
+<span>“A Fair Comparison of Graph Neural Networks for Graph
+Classification.”</span> In <em>International Conference on Learning
+Representations (ICLR)</em>. <a
+href="https://arxiv.org/abs/1912.09893">https://arxiv.org/abs/1912.09893</a>.
+</div>
+<div id="ref-feng2019temporal" class="csl-entry" role="listitem">
+Feng, Fuli, Xiangnan He, Xiang Wang, Cheng Luo, Yiqun Liu, and Tat-Seng
+Chua. 2019. <span>“Temporal Relational Ranking for Stock
+Prediction.”</span> <em>ACM Transactions on Information Systems</em> 37
+(2): 27:1–30. <a
+href="https://doi.org/10.1145/3309547">https://doi.org/10.1145/3309547</a>.
+</div>
+<div id="ref-ferraridacrema2021troubling" class="csl-entry"
+role="listitem">
+Ferrari Dacrema, Maurizio, Simone Boglio, Paolo Cremonesi, and Dietmar
+Jannach. 2021. <span>“A Troubling Analysis of Reproducibility and
+Progress in Recommender Systems Research.”</span> <em>ACM Transactions
+on Information Systems</em> 39 (2): 20:1–49. <a
+href="https://doi.org/10.1145/3434185">https://doi.org/10.1145/3434185</a>.
+</div>
+<div id="ref-giacomini2006tests" class="csl-entry" role="listitem">
+Giacomini, Raffaella, and Halbert White. 2006. <span>“Tests of
+Conditional Predictive Ability.”</span> <em>Econometrica</em> 74 (6):
+1545–78. <a
+href="https://doi.org/10.1111/j.1468-0262.2006.00718.x">https://doi.org/10.1111/j.1468-0262.2006.00718.x</a>.
+</div>
+<div id="ref-gu2020empirical" class="csl-entry" role="listitem">
+Gu, Shihao, Bryan Kelly, and Dacheng Xiu. 2020. <span>“Empirical Asset
+Pricing via Machine Learning.”</span> <em>The Review of Financial
+Studies</em> 33 (5): 2223–73. <a
+href="https://doi.org/10.1093/rfs/hhaa009">https://doi.org/10.1093/rfs/hhaa009</a>.
+</div>
+<div id="ref-hansen2005test" class="csl-entry" role="listitem">
+Hansen, Peter Reinhard. 2005. <span>“A Test for Superior Predictive
+Ability.”</span> <em>Journal of Business &amp; Economic Statistics</em>
+23 (4): 365–80. <a
+href="https://doi.org/10.1198/073500105000000063">https://doi.org/10.1198/073500105000000063</a>.
+</div>
+<div id="ref-hansen2011mcs" class="csl-entry" role="listitem">
+Hansen, Peter R., Asger Lunde, and James M. Nason. 2011. <span>“The
+Model Confidence Set.”</span> <em>Econometrica</em> 79 (2): 453–97. <a
+href="https://doi.org/10.3982/ECTA5771">https://doi.org/10.3982/ECTA5771</a>.
+</div>
+<div id="ref-harvey2016cross" class="csl-entry" role="listitem">
+Harvey, Campbell R., Yan Liu, and Heqing Zhu. 2016<span>“... And the
+Cross-Section of Expected Returns.”</span> <em>The Review of Financial
+Studies</em> 29 (1): 5–68. <a
+href="https://doi.org/10.1093/rfs/hhv059">https://doi.org/10.1093/rfs/hhv059</a>.
+</div>
+<div id="ref-harvey1997testing" class="csl-entry" role="listitem">
+Harvey, David, Stephen Leybourne, and Paul Newbold. 1997. <span>“Testing
+the Equality of Prediction Mean Squared Errors.”</span>
+<em>International Journal of Forecasting</em> 13 (2): 281–91. <a
+href="https://doi.org/10.1016/S0169-2070(96)00719-4">https://doi.org/10.1016/S0169-2070(96)00719-4</a>.
+</div>
+<div id="ref-hou2007industry" class="csl-entry" role="listitem">
+Hou, Kewei. 2007. <span>“Industry Information Diffusion and the Lead-Lag
+Effect in Stock Returns.”</span> <em>The Review of Financial
+Studies</em> 20 (4): 1113–38. <a
+href="https://doi.org/10.1093/revfin/hhm003">https://doi.org/10.1093/revfin/hhm003</a>.
+</div>
+<div id="ref-hussain2020structure" class="csl-entry" role="listitem">
+Hussain, Hussain, Tomislav Duricic, Elisabeth Lex, Roman Kern, and Denis
+Helic. 2021. <span>“On the Impact of Communities on Semi-Supervised
+Classification Using Graph Neural Networks.”</span> In <em>Complex
+Networks &amp; Their Applications IX</em>. Springer, Cham. <a
+href="https://arxiv.org/abs/2010.16245">https://arxiv.org/abs/2010.16245</a>.
+</div>
+<div id="ref-katsman2024revisiting" class="csl-entry" role="listitem">
+Katsman, Isay, Ethan Lou, and Anna Gilbert. 2024. <span>“Revisiting the
+Necessity of Graph Learning and Common Graph Benchmarks.”</span> <a
+href="https://arxiv.org/abs/2412.06173">https://arxiv.org/abs/2412.06173</a>.
+</div>
+<div id="ref-kim2019hats" class="csl-entry" role="listitem">
+Kim, Raehyun, Chan Ho So, Minbyul Jeong, Sanghoon Lee, Jinkyu Kim, and
+Jaewoo Kang. 2019. <span>“<span>HATS</span>: A Hierarchical Graph
+Attention Network for Stock Movement Prediction.”</span> <a
+href="https://arxiv.org/abs/1908.07999">https://arxiv.org/abs/1908.07999</a>.
+</div>
+<div id="ref-kunsch1989jackknife" class="csl-entry" role="listitem">
+Künsch, Hans R. 1989. <span>“The Jackknife and the Bootstrap for General
+Stationary Observations.”</span> <em>The Annals of Statistics</em> 17
+(3): 1217–41. <a
+href="https://doi.org/10.1214/aos/1176347265">https://doi.org/10.1214/aos/1176347265</a>.
+</div>
+<div id="ref-ledoit2008sharpe" class="csl-entry" role="listitem">
+Ledoit, Olivier, and Michael Wolf. 2008. <span>“Robust Performance
+Hypothesis Testing with the <span>Sharpe</span> Ratio.”</span>
+<em>Journal of Empirical Finance</em> 15 (5): 850–59. <a
+href="https://doi.org/10.1016/j.jempfin.2008.03.002">https://doi.org/10.1016/j.jempfin.2008.03.002</a>.
+</div>
+<div id="ref-maganti2026shuffled" class="csl-entry" role="listitem">
+Maganti, Saket. 2026. <span>“When Graph Structure Becomes a Liability: A
+Critical Re-Evaluation of Graph Neural Networks for <span>Bitcoin</span>
+Fraud Detection Under Temporal Distribution Shift.”</span> <a
+href="https://arxiv.org/abs/2604.19514">https://arxiv.org/abs/2604.19514</a>.
+</div>
+<div id="ref-maslov2002specificity" class="csl-entry" role="listitem">
+Maslov, Sergei, and Kim Sneppen. 2002. <span>“Specificity and Stability
+in Topology of Protein Networks.”</span> <em>Science</em> 296 (5569):
+910–13. <a
+href="https://doi.org/10.1126/science.1065103">https://doi.org/10.1126/science.1065103</a>.
+</div>
+<div id="ref-menzly2010market" class="csl-entry" role="listitem">
+Menzly, Lior, and Oguzhan Ozbas. 2010. <span>“Market Segmentation and
+Cross-Predictability of Returns.”</span> <em>The Journal of Finance</em>
+65 (4): 1555–80. <a
+href="https://doi.org/10.1111/j.1540-6261.2010.01578.x">https://doi.org/10.1111/j.1540-6261.2010.01578.x</a>.
+</div>
+<div id="ref-moskowitz1999industries" class="csl-entry" role="listitem">
+Moskowitz, Tobias J., and Mark Grinblatt. 1999. <span>“Do Industries
+Explain Momentum?”</span> <em>The Journal of Finance</em> 54 (4):
+1249–90. <a
+href="https://doi.org/10.1111/0022-1082.00146">https://doi.org/10.1111/0022-1082.00146</a>.
+</div>
+<div id="ref-newey1987simple" class="csl-entry" role="listitem">
+Newey, Whitney K., and Kenneth D. West. 1987. <span>“A Simple, Positive
+Semi-Definite, Heteroskedasticity and Autocorrelation Consistent
+Covariance Matrix.”</span> <em>Econometrica</em> 55 (3): 703–8. <a
+href="https://doi.org/10.2307/1913610">https://doi.org/10.2307/1913610</a>.
+</div>
+<div id="ref-nikolopoulos2026placebo" class="csl-entry" role="listitem">
+Nikolopoulos, Sotirios D. 2026. <span>“Spurious Predictability in
+Financial Machine Learning.”</span> <a
+href="https://arxiv.org/abs/2604.15531">https://arxiv.org/abs/2604.15531</a>.
+</div>
+<div id="ref-niu2024evaluating" class="csl-entry" role="listitem">
+Niu, Yingjie, Lanxin Lu, Rian Dolphin, Valerio Poti, and Ruihai Dong.
+2024. <span>“Evaluating Financial Relational Graphs: Interpretation
+Before Prediction.”</span> In <em>Proceedings of the 5th ACM
+International Conference on AI in Finance</em>. <a
+href="https://doi.org/10.1145/3677052.3698644">https://doi.org/10.1145/3677052.3698644</a>.
+</div>
+<div id="ref-pillai2025rewired" class="csl-entry" role="listitem">
+Pillai, Sneh. 2025. <span>“Graph-Augmented <span>LSTM</span> for
+Forecasting Sparse Anomalies in Graph-Structured Time Series.”</span> <a
+href="https://arxiv.org/abs/2503.03729">https://arxiv.org/abs/2503.03729</a>.
+</div>
+<div id="ref-politis1994stationary" class="csl-entry" role="listitem">
+Politis, Dimitris N., and Joseph P. Romano. 1994. <span>“The Stationary
+Bootstrap.”</span> <em>Journal of the American Statistical
+Association</em> 89 (428): 1303–13. <a
+href="https://doi.org/10.1080/01621459.1994.10476870">https://doi.org/10.1080/01621459.1994.10476870</a>.
+</div>
+<div id="ref-romano2005stepwise" class="csl-entry" role="listitem">
+Romano, Joseph P., and Michael Wolf. 2005. <span>“Stepwise Multiple
+Testing as Formalized Data Snooping.”</span> <em>Econometrica</em> 73
+(4): 1237–82. <a
+href="https://doi.org/10.1111/j.1468-0262.2005.00615.x">https://doi.org/10.1111/j.1468-0262.2005.00615.x</a>.
+</div>
+<div id="ref-sawhney2021sthan" class="csl-entry" role="listitem">
+Sawhney, Ramit, Shivam Agarwal, Arnav Wadhwa, Tyler Derr, and Rajiv Ratn
+Shah. 2021. <span>“Stock Selection via Spatiotemporal Hypergraph
+Attention Network: A Learning to Rank Approach.”</span> In
+<em>Proceedings of the AAAI Conference on Artificial Intelligence</em>,
+35:497–504. 1. <a
+href="https://doi.org/10.1609/aaai.v35i1.16127">https://doi.org/10.1609/aaai.v35i1.16127</a>.
+</div>
+<div id="ref-schuirmann1987tost" class="csl-entry" role="listitem">
+Schuirmann, Donald J. 1987. <span>“A Comparison of the Two One-Sided
+Tests Procedure and the Power Approach for Assessing the Equivalence of
+Average Bioavailability.”</span> <em>Journal of Pharmacokinetics and
+Biopharmaceutics</em> 15 (6): 657–80. <a
+href="https://doi.org/10.1007/BF01068419">https://doi.org/10.1007/BF01068419</a>.
+</div>
+<div id="ref-shao2024basicts" class="csl-entry" role="listitem">
+Shao, Zezhi, Fei Wang, Yongjun Xu, Wei Wei, Chengqing Yu, Zhao Zhang, Di
+Yao, et al. 2025. <span>“Exploring Progress in Multivariate Time Series
+Forecasting: Comprehensive Benchmarking and Heterogeneity
+Analysis.”</span> <em>IEEE Transactions on Knowledge and Data
+Engineering</em>. <a
+href="https://doi.org/10.1109/TKDE.2024.3484454">https://doi.org/10.1109/TKDE.2024.3484454</a>.
+</div>
+<div id="ref-shao2022stid" class="csl-entry" role="listitem">
+Shao, Zezhi, Zhao Zhang, Fei Wang, Wei Wei, and Yongjun Xu. 2022.
+<span>“Spatial-Temporal Identity: A Simple yet Effective Baseline for
+Multivariate Time Series Forecasting.”</span> In <em>Proceedings of the
+31st ACM International Conference on Information and Knowledge
+Management (CIKM)</em>, 4454–58. <a
+href="https://doi.org/10.1145/3511808.3557702">https://doi.org/10.1145/3511808.3557702</a>.
+</div>
+<div id="ref-white2000reality" class="csl-entry" role="listitem">
+White, Halbert. 2000. <span>“A Reality Check for Data Snooping.”</span>
+<em>Econometrica</em> 68 (5): 1097–1126. <a
+href="https://doi.org/10.1111/1468-0262.00152">https://doi.org/10.1111/1468-0262.00152</a>.
+</div>
+<div id="ref-xu2021hist" class="csl-entry" role="listitem">
+Xu, Wentao, Weiqing Liu, Lewen Wang, Yingce Xia, Jiang Bian, Jian Yin,
+and Tie-Yan Liu. 2021. <span>“<span>HIST</span>: A Graph-Based Framework
+for Stock Trend Forecasting via Mining Concept-Oriented Shared
+Information.”</span> <a
+href="https://arxiv.org/abs/2110.13716">https://arxiv.org/abs/2110.13716</a>.
+</div>
+<div id="ref-yang2020qlib" class="csl-entry" role="listitem">
+Yang, Xiao, Weiqing Liu, Dong Zhou, Jiang Bian, and Tie-Yan Liu. 2020.
+<span>“Qlib: An <span>AI</span>-Oriented Quantitative Investment
+Platform.”</span> <a
+href="https://arxiv.org/abs/2009.11189">https://arxiv.org/abs/2009.11189</a>.
+</div>
+<div id="ref-zheng2023rtgcn" class="csl-entry" role="listitem">
+Zheng, Zetao, Jie Shao, Jia Zhu, and Heng Tao Shen. 2023.
+<span>“Relational Temporal Graph Convolutional Networks for
+Ranking-Based Stock Prediction.”</span> In <em>Proceedings of the 39th
+IEEE International Conference on Data Engineering (ICDE)</em>, 123–36.
+<a
+href="https://doi.org/10.1109/ICDE55515.2023.00017">https://doi.org/10.1109/ICDE55515.2023.00017</a>.
+</div>
+</div>
+
+</body></html>
