@@ -195,7 +195,28 @@ href="#ref-yang2020qlib" role="doc-biblioref">Yang et al.
 2020</a>)</span>; RT-GCN <span class="citation"
 data-cites="zheng2023rtgcn">(<a href="#ref-zheng2023rtgcn"
 role="doc-biblioref">Zheng et al. 2023</a>)</span> adds time-aware
-relation weighting. These papers compare against sequence-only baselines
+relation weighting. Later models learn their graphs from prices,
+attention or both: THGNN builds a daily graph from price correlation
+<span class="citation" data-cites="xiang2022thgnn">(<a
+href="#ref-xiang2022thgnn" role="doc-biblioref">Xiang et al.
+2022</a>)</span>, MASTER learns inter-stock attention <span
+class="citation" data-cites="li2024master">(<a href="#ref-li2024master"
+role="doc-biblioref">Li et al. 2024</a>)</span>, and ESTIMATE combines
+an industry hypergraph with learned dynamics <span class="citation"
+data-cites="huynh2023estimate">(<a href="#ref-huynh2023estimate"
+role="doc-biblioref">Huynh et al. 2023</a>)</span>; <span
+class="citation" data-cites="patel2024systematic">Patel, Jariwala, and
+Chattopadhyay (<a href="#ref-patel2024systematic"
+role="doc-biblioref">2025</a>)</span> survey the field. Models without
+relation data remain competitive: an MLP without a predefined graph
+reports results above graph-based and other recent forecasters on stock
+benchmarks <span class="citation" data-cites="fan2024stockmixer">(<a
+href="#ref-fan2024stockmixer" role="doc-biblioref">Fan and Shen
+2024</a>)</span>, and a model that uses only stock factors, without
+industry or concept relations, reports an IC on CSI300 slightly above
+HIST’s <span class="citation" data-cites="zhuang2026grupfg">(<a
+href="#ref-zhuang2026grupfg" role="doc-biblioref">Zhuang et al.
+2026</a>)</span>. These papers compare against sequence-only baselines
 and, in some cases, remove one relation type at a time. None reports a
 placebo graph with the real graph’s size and shape. <span
 class="citation" data-cites="niu2024evaluating">Niu et al. (<a
@@ -231,13 +252,14 @@ class="citation" data-cites="hussain2020structure">Hussain et al. (<a
 href="#ref-hussain2020structure" role="doc-biblioref">2021</a>)</span>
 compare stochastic-block-model, configuration-model and Erdős-Rényi
 nulls to attribute node-classification gains to communities or degree.
-In spatio-temporal forecasting, simple identity-based models match graph
-models <span class="citation"
-data-cites="shao2022stid shao2024basicts">(<a href="#ref-shao2022stid"
-role="doc-biblioref">Shao et al. 2022</a>, <a
-href="#ref-shao2024basicts" role="doc-biblioref">2025</a>)</span>,
-adaptive graphs replace predefined ones <span class="citation"
-data-cites="bai2020agcrn">(<a href="#ref-bai2020agcrn"
+In spatio-temporal forecasting, simple identity-based and graph-free
+models match graph models <span class="citation"
+data-cites="shao2022stid shao2024basicts liu2023traffic">(<a
+href="#ref-shao2022stid" role="doc-biblioref">Shao et al. 2022</a>, <a
+href="#ref-shao2024basicts" role="doc-biblioref">2025</a>; <a
+href="#ref-liu2023traffic" role="doc-biblioref">Liu et al.
+2023</a>)</span>, adaptive graphs replace predefined ones <span
+class="citation" data-cites="bai2020agcrn">(<a href="#ref-bai2020agcrn"
 role="doc-biblioref">Bai et al. 2020</a>)</span>, and single
 rewired-graph controls appear in anomaly forecasting <span
 class="citation" data-cites="pillai2025rewired">(<a
@@ -328,14 +350,30 @@ data-cites="cohen2008economic">(<a href="#ref-cohen2008economic"
 role="doc-biblioref">Cohen and Frazzini 2008</a>)</span>, industry
 information diffuses with a lead-lag <span class="citation"
 data-cites="hou2007industry">(<a href="#ref-hou2007industry"
-role="doc-biblioref">Hou 2007</a>)</span> and returns cross-predict
-within related segments <span class="citation"
+role="doc-biblioref">Hou 2007</a>)</span> returns cross-predict within
+related segments <span class="citation"
 data-cites="menzly2010market">(<a href="#ref-menzly2010market"
-role="doc-biblioref">Menzly and Ozbas 2010</a>)</span>. Our planted
-signal reproduces this mechanism, a neighbour-mean lead-lag spillover,
-inside the forecasters’ own data. Placebo graphs are randomisation
-controls on the adjacency, related to the bootstrap and permutation
-inference against data snooping in forecast evaluation <span
+role="doc-biblioref">Menzly and Ozbas 2010</a>)</span>, and momentum
+spills over through shared analyst coverage <span class="citation"
+data-cites="ali2020shared">(<a href="#ref-ali2020shared"
+role="doc-biblioref">Ali and Hirshleifer 2020</a>)</span> and
+technological proximity <span class="citation"
+data-cites="lee2019technological">(<a href="#ref-lee2019technological"
+role="doc-biblioref">Lee et al. 2019</a>)</span>. Our planted signal
+reproduces this mechanism, a neighbour-mean lead-lag spillover, inside
+the forecasters’ own data. The term follows the placebo and
+negative-control tests of causal inference, which alter the treatment,
+the outcome or the population to check that an estimated effect is not
+an artefact of the design <span class="citation"
+data-cites="lipsitch2010negative abadie2010synthetic eggers2024placebo">(<a
+href="#ref-lipsitch2010negative" role="doc-biblioref">Lipsitch, Tchetgen
+Tchetgen, and Cohen 2010</a>; <a href="#ref-abadie2010synthetic"
+role="doc-biblioref">Abadie, Diamond, and Hainmueller 2010</a>; <a
+href="#ref-eggers2024placebo" role="doc-biblioref">Eggers, Tuñón, and
+Dafoe 2024</a>)</span>; a placebo graph alters the treatment, the
+relational input, while keeping its structure. Placebo graphs are
+randomisation controls on the adjacency, related to the bootstrap and
+permutation inference against data snooping in forecast evaluation <span
 class="citation" data-cites="white2000reality romano2005stepwise">(<a
 href="#ref-white2000reality" role="doc-biblioref">White 2000</a>; <a
 href="#ref-romano2005stepwise" role="doc-biblioref">Romano and Wolf
@@ -3345,6 +3383,20 @@ content of the published article.</p>
 <h1 class="unnumbered" id="bibliography">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent"
 data-entry-spacing="0" role="list">
+<div id="ref-abadie2010synthetic" class="csl-entry" role="listitem">
+Abadie, Alberto, Alexis Diamond, and Jens Hainmueller. 2010.
+<span>“Synthetic Control Methods for Comparative Case Studies:
+Estimating the Effect of California’s Tobacco Control Program.”</span>
+<em>Journal of the American Statistical Association</em> 105 (490):
+493–505. <a
+href="https://doi.org/10.1198/jasa.2009.ap08746">https://doi.org/10.1198/jasa.2009.ap08746</a>.
+</div>
+<div id="ref-ali2020shared" class="csl-entry" role="listitem">
+Ali, Usman, and David Hirshleifer. 2020. <span>“Shared Analyst Coverage:
+Unifying Momentum Spillover Effects.”</span> <em>Journal of Financial
+Economics</em> 136 (3): 649–75. <a
+href="https://doi.org/10.1016/j.jfineco.2019.10.007">https://doi.org/10.1016/j.jfineco.2019.10.007</a>.
+</div>
 <div id="ref-attali2024rewiring" class="csl-entry" role="listitem">
 Attali, Hugo, Davide Buscaldi, Nathalie Pernelle, and Fragkiskos D.
 Malliaros. 2024. <span>“Graph Rewiring in <span>GNN</span>s to Mitigate
@@ -3425,12 +3477,25 @@ Predictive Accuracy.”</span> <em>Journal of Business &amp; Economic
 Statistics</em> 13 (3): 253–63. <a
 href="https://doi.org/10.1080/07350015.1995.10524599">https://doi.org/10.1080/07350015.1995.10524599</a>.
 </div>
+<div id="ref-eggers2024placebo" class="csl-entry" role="listitem">
+Eggers, Andrew C., Guadalupe Tuñón, and Allan Dafoe. 2024.
+<span>“Placebo Tests for Causal Inference.”</span> <em>American Journal
+of Political Science</em> 68 (3): 1106–21. <a
+href="https://doi.org/10.1111/ajps.12818">https://doi.org/10.1111/ajps.12818</a>.
+</div>
 <div id="ref-errica2020fair" class="csl-entry" role="listitem">
 Errica, Federico, Marco Podda, Davide Bacciu, and Alessio Micheli. 2020.
 <span>“A Fair Comparison of Graph Neural Networks for Graph
 Classification.”</span> In <em>International Conference on Learning
 Representations (ICLR)</em>. <a
 href="https://arxiv.org/abs/1912.09893">https://arxiv.org/abs/1912.09893</a>.
+</div>
+<div id="ref-fan2024stockmixer" class="csl-entry" role="listitem">
+Fan, Jinyong, and Yanyan Shen. 2024. <span>“StockMixer: A Simple yet
+Strong MLP-Based Architecture for Stock Price Forecasting.”</span> In
+<em>Proceedings of the AAAI Conference on Artificial Intelligence</em>,
+38:8389–97. 8. <a
+href="https://doi.org/10.1609/aaai.v38i8.28681">https://doi.org/10.1609/aaai.v38i8.28681</a>.
 </div>
 <div id="ref-feng2019temporal" class="csl-entry" role="listitem">
 Feng, Fuli, Xiangnan He, Xiang Wang, Cheng Luo, Yiqun Liu, and Tat-Seng
@@ -3502,6 +3567,15 @@ Classification Using Graph Neural Networks.”</span> In <em>Complex
 Networks &amp; Their Applications IX</em>. Springer, Cham. <a
 href="https://arxiv.org/abs/2010.16245">https://arxiv.org/abs/2010.16245</a>.
 </div>
+<div id="ref-huynh2023estimate" class="csl-entry" role="listitem">
+Huynh, Thanh Trung, Minh Hieu Nguyen, Thanh Tam Nguyen, Phi Le Nguyen,
+Matthias Weidlich, Quoc Viet Hung Nguyen, and Karl Aberer. 2023.
+<span>“Efficient Integration of Multi-Order Dynamics and Internal
+Dynamics in Stock Movement Prediction.”</span> In <em>Proceedings of the
+Sixteenth ACM International Conference on Web Search and Data
+Mining</em>, 850–58. <a
+href="https://doi.org/10.1145/3539597.3570427">https://doi.org/10.1145/3539597.3570427</a>.
+</div>
 <div id="ref-katsman2024revisiting" class="csl-entry" role="listitem">
 Katsman, Isay, Ethan Lou, and Anna Gilbert. 2024. <span>“Revisiting the
 Necessity of Graph Learning and Common Graph Benchmarks.”</span> <a
@@ -3524,6 +3598,31 @@ Ledoit, Olivier, and Michael Wolf. 2008. <span>“Robust Performance
 Hypothesis Testing with the <span>Sharpe</span> Ratio.”</span>
 <em>Journal of Empirical Finance</em> 15 (5): 850–59. <a
 href="https://doi.org/10.1016/j.jempfin.2008.03.002">https://doi.org/10.1016/j.jempfin.2008.03.002</a>.
+</div>
+<div id="ref-lee2019technological" class="csl-entry" role="listitem">
+Lee, Charles M. C., Stephen Teng Sun, Rongfei Wang, and Ran Zhang. 2019.
+<span>“Technological Links and Predictable Returns.”</span> <em>Journal
+of Financial Economics</em> 132 (3): 76–96. <a
+href="https://doi.org/10.1016/j.jfineco.2018.11.008">https://doi.org/10.1016/j.jfineco.2018.11.008</a>.
+</div>
+<div id="ref-li2024master" class="csl-entry" role="listitem">
+Li, Tong, Zhaoyang Liu, Yanyan Shen, Xue Wang, Haokun Chen, and Sen
+Huang. 2024. <span>“MASTER: Market-Guided Stock Transformer for Stock
+Price Forecasting.”</span> In <em>Proceedings of the AAAI Conference on
+Artificial Intelligence</em>, 38:162–70. 1. <a
+href="https://doi.org/10.1609/aaai.v38i1.27767">https://doi.org/10.1609/aaai.v38i1.27767</a>.
+</div>
+<div id="ref-lipsitch2010negative" class="csl-entry" role="listitem">
+Lipsitch, Marc, Eric Tchetgen Tchetgen, and Ted Cohen. 2010.
+<span>“Negative Controls: A Tool for Detecting Confounding and Bias in
+Observational Studies.”</span> <em>Epidemiology</em> 21 (3): 383–88. <a
+href="https://doi.org/10.1097/EDE.0b013e3181d61eeb">https://doi.org/10.1097/EDE.0b013e3181d61eeb</a>.
+</div>
+<div id="ref-liu2023traffic" class="csl-entry" role="listitem">
+Liu, Xu, Yuxuan Liang, Chao Huang, Hengchang Hu, Yushi Cao, Bryan Hooi,
+and Roger Zimmermann. 2023. <span>“Do We Really Need Graph Neural
+Networks for Traffic Forecasting?”</span> <a
+href="https://arxiv.org/abs/2301.12603">https://arxiv.org/abs/2301.12603</a>.
 </div>
 <div id="ref-maganti2026shuffled" class="csl-entry" role="listitem">
 Maganti, Saket. 2026. <span>“When Graph Structure Becomes a Liability: A
@@ -3573,6 +3672,13 @@ Niu, Yingjie, Lanxin Lu, Rian Dolphin, Valerio Poti, and Ruihai Dong.
 Before Prediction.”</span> In <em>Proceedings of the 5th ACM
 International Conference on AI in Finance</em>. <a
 href="https://doi.org/10.1145/3677052.3698644">https://doi.org/10.1145/3677052.3698644</a>.
+</div>
+<div id="ref-patel2024systematic" class="csl-entry" role="listitem">
+Patel, Manali, Krupa Jariwala, and Chiranjoy Chattopadhyay. 2025.
+<span>“A Systematic Review on Graph Neural Network-Based Methods for
+Stock Market Forecasting.”</span> <em>ACM Computing Surveys</em> 57 (2):
+1–38. <a
+href="https://doi.org/10.1145/3696411">https://doi.org/10.1145/3696411</a>.
 </div>
 <div id="ref-petropoulos2022forecasting" class="csl-entry"
 role="listitem">
@@ -3634,6 +3740,14 @@ White, Halbert. 2000. <span>“A Reality Check for Data Snooping.”</span>
 <em>Econometrica</em> 68 (5): 1097–1126. <a
 href="https://doi.org/10.1111/1468-0262.00152">https://doi.org/10.1111/1468-0262.00152</a>.
 </div>
+<div id="ref-xiang2022thgnn" class="csl-entry" role="listitem">
+Xiang, Sheng, Dawei Cheng, Chencheng Shang, Ying Zhang, and Yuqi Liang.
+2022. <span>“Temporal and Heterogeneous Graph Neural Network for
+Financial Time Series Prediction.”</span> In <em>Proceedings of the 31st
+ACM International Conference on Information and Knowledge
+Management</em>, 3584–93. <a
+href="https://doi.org/10.1145/3511808.3557089">https://doi.org/10.1145/3511808.3557089</a>.
+</div>
 <div id="ref-xu2021hist" class="csl-entry" role="listitem">
 Xu, Wentao, Weiqing Liu, Lewen Wang, Yingce Xia, Jiang Bian, Jian Yin,
 and Tie-Yan Liu. 2021. <span>“<span>HIST</span>: A Graph-Based Framework
@@ -3654,6 +3768,13 @@ Ranking-Based Stock Prediction.”</span> In <em>Proceedings of the 39th
 IEEE International Conference on Data Engineering (ICDE)</em>, 123–36.
 <a
 href="https://doi.org/10.1109/ICDE55515.2023.00017">https://doi.org/10.1109/ICDE55515.2023.00017</a>.
+</div>
+<div id="ref-zhuang2026grupfg" class="csl-entry" role="listitem">
+Zhuang, Yonggai, Haoran Chen, Kequan Wang, and Teng Fei. 2026.
+<span>“<span>GRU-PFG</span>: Extract Inter-Stock Correlation from Stock
+Factors with Graph Neural Network.”</span> In <em>Web and Big Data</em>,
+142–56. Lecture Notes in Computer Science. Springer. <a
+href="https://doi.org/10.1007/978-981-95-5640-3_10">https://doi.org/10.1007/978-981-95-5640-3_10</a>.
 </div>
 </div>
 
