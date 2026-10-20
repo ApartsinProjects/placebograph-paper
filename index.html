@@ -1099,19 +1099,21 @@ data-cites="bai2020agcrn">(<a href="#ref-bai2020agcrn"
 role="doc-biblioref">Bai et al. 2020</a>)</span>. Holding out the
 validation period strictly from the RSR training windows leaves every
 verdict of the full placebo family unchanged in both markets (ten seeds;
-Appendix, Table  ef<span>tab:strict</span>). Variation across placebo
-draws is small next to variation across training seeds: drawing five
-random graphs per seed changes the NYSE difference by a standard
-deviation of 0.002, against 0.006 across seeds, and averaged over draws
-the real graph’s advantage over the random placebo is 0.0019 (95% CI
-[<span class="math inline">\(-\)</span>0.0048, 0.0086]) on NYSE and
-0.0002 ([<span class="math inline">\(-\)</span>0.0021, 0.0029]) on
-NASDAQ (Appendix, Table  ef<span>tab:draws</span>). On NYSE no condition
-differs from the real graph after correction; the raw intervals against
-the graph without cross-firm links and the no-graph base model lie below
-zero (<span class="math inline">\(q=0.12\)</span>). RT-GCN on NASDAQ,
-which uses a dense graph combining industry and Wikidata relations,
-matches every placebo, including the graph without cross-firm links: the
+Appendix, Table <a href="#tab:strict" data-reference-type="ref"
+data-reference="tab:strict">11</a>). Variation across placebo draws is
+small next to variation across training seeds: drawing five random
+graphs per seed changes the NYSE difference by a standard deviation of
+0.002, against 0.006 across seeds, and averaged over draws the real
+graph’s advantage over the random placebo is 0.0019 (95% CI [<span
+class="math inline">\(-\)</span>0.0048, 0.0086]) on NYSE and 0.0002
+([<span class="math inline">\(-\)</span>0.0021, 0.0029]) on NASDAQ
+(Appendix, Table <a href="#tab:draws" data-reference-type="ref"
+data-reference="tab:draws">13</a>). On NYSE no condition differs from
+the real graph after correction; the raw intervals against the graph
+without cross-firm links and the no-graph base model lie below zero
+(<span class="math inline">\(q=0.12\)</span>). RT-GCN on NASDAQ, which
+uses a dense graph combining industry and Wikidata relations, matches
+every placebo, including the graph without cross-firm links: the
 time-aware relation weighting adds no forecasting value with the real
 relations, with random ones, or with none. With seeds resampled and the
 family corrected for multiple testing, no comparison with a
@@ -2377,6 +2379,21 @@ signal above the test’s resolution, while HIST and RT-GCN do not learn
 such a signal even when it runs along their own graph. The protocol is
 cheap enough to become a routine part of evaluating relational
 forecasters.</p>
+<h1 class="unnumbered" id="data-and-code-availability">Data and code
+availability</h1>
+<p>Code to reproduce every table and figure, the placebo generators and
+the analysis scripts are available from the authors and will be released
+publicly with the published version. The data are the published datasets
+of the audited papers.</p>
+<h1 class="unnumbered"
+id="declaration-of-generative-ai-and-ai-assisted-technologies-in-the-manuscript-preparation-process">Declaration
+of generative AI and AI-assisted technologies in the manuscript
+preparation process</h1>
+<p>During the preparation of this work the authors used Claude
+(Anthropic) in order to write and run experiment code and to draft and
+edit the manuscript. After using this tool, the authors reviewed and
+edited the content as needed and take full responsibility for the
+content of the published article.</p>
 <h1 id="sec:appendix">Robustness and diagnostics</h1>
 <h4 id="placebo-invariants">Placebo invariants</h4>
 <p>Table <a href="#tab:inv" data-reference-type="ref"
@@ -3365,21 +3382,6 @@ significantly more accurate at the 5% level.</caption>
 </tbody>
 </table></div>
 </div>
-<h1 class="unnumbered" id="data-and-code-availability">Data and code
-availability</h1>
-<p>Code to reproduce every table and figure, the placebo generators and
-the analysis scripts are available from the authors and will be released
-publicly with the published version. The data are the published datasets
-of the audited papers.</p>
-<h1 class="unnumbered"
-id="declaration-of-generative-ai-and-ai-assisted-technologies-in-the-manuscript-preparation-process">Declaration
-of generative AI and AI-assisted technologies in the manuscript
-preparation process</h1>
-<p>During the preparation of this work the authors used Claude
-(Anthropic) in order to write and run experiment code and to draft and
-edit the manuscript. After using this tool, the authors reviewed and
-edited the content as needed and take full responsibility for the
-content of the published article.</p>
 <h1 class="unnumbered" id="bibliography">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent"
 data-entry-spacing="0" role="list">
