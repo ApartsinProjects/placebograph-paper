@@ -125,7 +125,16 @@ with the curated links or with random ones. HIST is the one model that
 gains over its sequence-only base (0.012 in daily rank correlation), and
 the placebo test attributes that gain: a random concept graph retains it
 (real minus random 0.0000, equivalence bound <span
-class="math inline">\(\pm0.0020\)</span>, 17</p>
+class="math inline">\(\pm0.0020\)</span>, 17% of the gain), and removing
+HIST’s learned hidden-concept module shows that the architecture alone
+and pooling over any grouping of stocks account for it. For RSR on NYSE
+the reproduced model has a rank correlation of 0.004, and the industry
+graph does not improve on the model without cross-firm links. A placebo
+that shuffles firm labels while keeping the graph’s entire topology
+nevertheless forecasts worse than the real graph there (by 0.009, <span
+class="math inline">\(q=0.011\)</span>): given the block structure of
+the industry graph, the true membership beats an arbitrary one, which
+the random placebo, by also flattening the topology, does not show.</p>
 <p>A null result is only informative if the test can detect an effect.
 We therefore plant a relational signal into the returns of every market,
 built from each firm’s real-graph neighbours and orthogonal to the
