@@ -46,16 +46,16 @@ model-market cells, the real graph forecasts no better than its random
 placebo in any cell. In two cells the model gains nothing from its graph
 over the same model without cross-firm links, and the one model that
 gains over its sequence-only base keeps at least three quarters of that
-gain with a random graph. In the fourth cell the graph does not improve
-on no links either, although shuffling firm labels within its topology
-lowers accuracy: the identity of the links matters there given the
-graph’s shape. A planted-signal experiment shows that one model converts
-a strong constructed neighbour signal into a detectable gain, while two
-others do not learn it under their published training protocols; the
-test bounds the gain a model draws from its graph, not the information
-the graph holds. The test is cheap and model-agnostic, and it gives
-forecasters a routine check of whether the specific links of a
-relational input add predictive value.</p>
+gain with a random graph, on two test windows. In the fourth cell the
+graph adds nothing over no links; shuffling firm labels within its
+topology lowers accuracy there, an indication, weaker under a stricter
+training split, that link identity matters given the graph’s shape. A
+planted-signal experiment shows that one model converts a strong
+neighbour signal into a detectable gain, while two others do not learn
+it at any strength; the test bounds the gain a model draws from its
+graph, not the information the graph holds. The test is cheap and
+model-agnostic: a routine check of whether the links of a relational
+input add predictive value.</p>
 
 <p class="keywords"><b>Keywords:</b> forecast evaluation; placebo test; graph neural networks; stock return prediction; equivalence testing; reproducibility</p></div>
 <h1 id="sec:intro">Introduction</h1>
@@ -125,16 +125,20 @@ with the curated links or with random ones. HIST is the one model that
 gains over its sequence-only base (0.012 in daily rank correlation), and
 the placebo test attributes that gain: a random concept graph retains it
 (real minus random 0.0000, equivalence bound <span
-class="math inline">\(\pm0.0020\)</span>, 17% of the gain), and removing
-HIST’s learned hidden-concept module shows that the architecture alone
-and pooling over any grouping of stocks account for it. For RSR on NYSE
-the reproduced model has a rank correlation of 0.004, and the industry
-graph does not improve on the model without cross-firm links. A placebo
-that shuffles firm labels while keeping the graph’s entire topology
-nevertheless forecasts worse than the real graph there (by 0.009, <span
-class="math inline">\(q=0.011\)</span>): given the block structure of
-the industry graph, the true membership beats an arbitrary one, which
-the random placebo, by also flattening the topology, does not show.</p>
+class="math inline">\(\pm0.0020\)</span>, 17% of the gain), on the
+published test period and on a second, earlier one, and removing HIST’s
+learned hidden-concept module shows that the architecture alone and
+pooling over any grouping of stocks account for it. For RSR on NYSE the
+reproduced model has a rank correlation of 0.004, and the industry graph
+does not improve on the model without cross-firm links. A placebo that
+shuffles firm labels while keeping the graph’s entire topology ties the
+real graph in the other three cells and forecasts worse than it on NYSE
+(by 0.009, <span class="math inline">\(q=0.011\)</span>): given the
+block structure of the industry graph, the true membership beats an
+arbitrary one, which the random placebo, by also flattening the
+topology, does not show. The effect falls by about two fifths and loses
+significance under a stricter training split, so we report it as an
+indication.</p>
 <p>A null result is only informative if the test can detect an effect.
 We therefore plant a relational signal into the returns of every market,
 built from each firm’s real-graph neighbours and orthogonal to the
@@ -422,7 +426,8 @@ the relational module on the authors’ pretrained sequential embeddings;
 the self-loops placebo is the like-for-like control without cross-firm
 information. In the tables, “No graph links” denotes self-loops only
 (RSR, RT-GCN) and the concept graph without links (HIST). <span
-class="math inline">\(^{d}\)</span>Run for the two RSR cells.</caption>
+class="math inline">\(^{d}\)</span>For HIST the stocks are shuffled
+among the rows of the stock-concept matrix.</caption>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Placebo</th>
@@ -627,7 +632,7 @@ market); it does not by itself rule out correlation with the rest of
 firm <span class="math inline">\(i\)</span>’s history, so we measure
 directly how much of the planted term a model without the graph recovers
 (Appendix, Table <a href="#tab:posctrl" data-reference-type="ref"
-data-reference="tab:posctrl">13</a>). We use two sources. The first, for
+data-reference="tab:posctrl">14</a>). We use two sources. The first, for
 RSR, is a fixed random projection <span
 class="math inline">\(u_{j,t}=\langle e_{j,t}, w\rangle\)</span> of the
 representation <span class="math inline">\(e_{j,t}\)</span> that the
@@ -870,7 +875,7 @@ data-reference-type="ref" data-reference="tab:main">3</a> report the
 real graph’s advantage in daily rank IC over each placebo. Against the
 three structure-matched placebos (random, degree-preserving and
 correlation-matched), 12 of 12 comparisons across 4 model-market cells
-show no difference after the Benjamini-Hochberg correction.</p>
+are not significant after the Benjamini-Hochberg correction.</p>
 <figure id="fig:forest">
 <img src="figures/fig_forest.png" />
 <figcaption>Real graph minus placebo in daily rank IC: mean over paired
@@ -880,7 +885,9 @@ Structure-matched placebos: random, degree-preserving,
 correlation-matched. Each panel has its own horizontal scale. Filled
 markers: Benjamini-Hochberg <span
 class="math inline">\(q&lt;0.05\)</span> within the model-market cell.
-RT-GCN has no separate no-graph base model.</figcaption>
+Rows are blank where a model has no such condition: HIST has no
+uniform-mixing placebo, and RT-GCN has no separate no-graph base
+model.</figcaption>
 </figure>
 <div id="tab:main">
 <div class="table-wrap"><table>
@@ -912,7 +919,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0053, 0.0037]</td>
 <td style="text-align: right;">0.644</td>
 <td style="text-align: right;">0.646</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -921,7 +928,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0059, 0.0037]</td>
 <td style="text-align: right;">0.646</td>
 <td style="text-align: right;">0.646</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -930,7 +937,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0060, 0.0027]</td>
 <td style="text-align: right;">0.420</td>
 <td style="text-align: right;">0.646</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -939,7 +946,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0095, 0.0042]</td>
 <td style="text-align: right;">0.436</td>
 <td style="text-align: right;">0.646</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -948,7 +955,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0084, -0.0004]</td>
 <td style="text-align: right;">0.037</td>
 <td style="text-align: right;">0.124</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -957,7 +964,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0219, -0.0005]</td>
 <td style="text-align: right;">0.041</td>
 <td style="text-align: right;">0.124</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">NASDAQ (RSR-E, Wikidata)</td>
@@ -966,7 +973,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0032, 0.0017]</td>
 <td style="text-align: right;">0.759</td>
 <td style="text-align: right;">0.784</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -975,7 +982,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[-0.0014, 0.0019]</td>
 <td style="text-align: right;">0.768</td>
 <td style="text-align: right;">0.784</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -984,7 +991,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">[0.0000, 0.0024]</td>
 <td style="text-align: right;">0.046</td>
 <td style="text-align: right;">0.138</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1003,7 +1010,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0041, 0.0033]</td>
 <td style="text-align: right;">0.784</td>
 <td style="text-align: right;">0.784</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1012,7 +1019,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0155, 0.0075]</td>
 <td style="text-align: right;">0.450</td>
 <td style="text-align: right;">0.784</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">CSI300 (HIST, concepts)</td>
@@ -1021,7 +1028,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0022, 0.0025]</td>
 <td style="text-align: right;">0.975</td>
 <td style="text-align: right;">0.975</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1030,7 +1037,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0013, 0.0021]</td>
 <td style="text-align: right;">0.570</td>
 <td style="text-align: right;">0.712</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -1039,7 +1046,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0027, 0.0004]</td>
 <td style="text-align: right;">0.137</td>
 <td style="text-align: right;">0.244</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1048,7 +1055,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 <td style="text-align: right;">[-0.0008, 0.0051]</td>
 <td style="text-align: right;">0.146</td>
 <td style="text-align: right;">0.244</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -1069,7 +1076,7 @@ Wikidata)</td>
 <td style="text-align: right;">[-0.0019, 0.0028]</td>
 <td style="text-align: right;">0.640</td>
 <td style="text-align: right;">0.653</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -1078,7 +1085,7 @@ Wikidata)</td>
 <td style="text-align: right;">[-0.0045, 0.0012]</td>
 <td style="text-align: right;">0.279</td>
 <td style="text-align: right;">0.653</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1087,7 +1094,7 @@ Wikidata)</td>
 <td style="text-align: right;">[-0.0025, 0.0045]</td>
 <td style="text-align: right;">0.634</td>
 <td style="text-align: right;">0.653</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -1096,7 +1103,7 @@ Wikidata)</td>
 <td style="text-align: right;">[-0.0030, 0.0074]</td>
 <td style="text-align: right;">0.653</td>
 <td style="text-align: right;">0.653</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"></td>
@@ -1105,7 +1112,7 @@ Wikidata)</td>
 <td style="text-align: right;">[-0.0016, 0.0038]</td>
 <td style="text-align: right;">0.563</td>
 <td style="text-align: right;">0.653</td>
-<td style="text-align: left;">no difference</td>
+<td style="text-align: left;">not significant</td>
 </tr>
 </tbody>
 </table></div>
@@ -1127,7 +1134,7 @@ budget gains 0.005 (95% CI [0.003, 0.007]), and HIST still exceeds it by
 0.007 ([0.001, 0.012]). HIST’s learned hidden-concept module still mixes
 information across stocks under every concept placebo, so we also remove
 it (Appendix, Table <a href="#tab:histabl" data-reference-type="ref"
-data-reference="tab:histabl">15</a>); both LSTM bases and an unmodified
+data-reference="tab:histabl">16</a>); both LSTM bases and an unmodified
 HIST run reproduce the main grid exactly. Without the hidden module and
 without any concept link, HIST still beats the LSTM by 0.005 (95% CI
 [0.003, 0.008]), the same gain as the further-trained LSTM; adding the
@@ -1182,7 +1189,7 @@ class="math inline">\(-\)</span>0.0068, 0.0083]), and against the
 correlation-matched placebo only the interval for the 893 firms without
 real neighbours, which that placebo links, excludes zero (Appendix,
 Table <a href="#tab:connect" data-reference-type="ref"
-data-reference="tab:connect">14</a>). The random placebo also changes
+data-reference="tab:connect">15</a>). The random placebo also changes
 who has any neighbour: it links 85% of NASDAQ firms where the real graph
 links 13%. A placebo that rewires the real links at random among the
 linked firms only, leaving every other firm isolated, removes this
@@ -1209,25 +1216,49 @@ and the shape of the graph: the NYSE industry graph is a set of blocks,
 one of 500 firms, and random wiring flattens them. The label-permutation
 placebo keeps the blocks and shuffles the firms (Appendix, Table <a
 href="#tab:permute" data-reference-type="ref"
-data-reference="tab:permute">12</a>). On NASDAQ the real graph ties it
-(0.0004, 95% CI [<span class="math inline">\(-\)</span>0.0009, 0.0016]).
-On NYSE the real graph beats it by 0.0088 ([0.0036, 0.0145], <span
+data-reference="tab:permute">12</a>). In three cells the real graph ties
+it: RSR on NASDAQ (0.0004, 95% CI [<span
+class="math inline">\(-\)</span>0.0009, 0.0016]), HIST (<span
+class="math inline">\(-0.0002\)</span>, [<span
+class="math inline">\(-\)</span>0.0020, 0.0018]) and RT-GCN (0.0006,
+[<span class="math inline">\(-\)</span>0.0023, 0.0036]). On NYSE the
+real graph beats it by 0.0088 ([0.0036, 0.0145], <span
 class="math inline">\(q=0.011\)</span> within the NYSE family): the
 models trained on shuffled blocks have a mean rank IC of <span
 class="math inline">\(-0.005\)</span>, negative in 17 of 20 seeds,
 against 0.004 with the real graph, 0.005 with random wiring and 0.008
-without cross-firm links, and in the six seeds examined the loss
-appears, on average, both inside the large block (<span
-class="math inline">\(-0.011\)</span> against <span
-class="math inline">\(0.001\)</span>) and outside it (<span
-class="math inline">\(-0.006\)</span> against <span
-class="math inline">\(0.002\)</span>). On NYSE, then, aggregating over
+without cross-firm links, and the loss appears, on average over the 20
+seeds, both inside the large block (<span
+class="math inline">\(-0.008\)</span> against <span
+class="math inline">\(-0.002\)</span> with the real graph) and outside
+it (<span class="math inline">\(-0.004\)</span> against <span
+class="math inline">\(0.004\)</span>). On NYSE, then, aggregating over
 industry-shaped blocks costs accuracy, and it costs much more when the
 blocks hold arbitrary firms: the industry membership carries information
 relative to an arbitrary membership of the same shape, yet the industry
 graph as a whole adds nothing over no links. A random placebo alone
 would have missed the first half of that statement, and a comparison
-with the no-graph model alone the second.</p>
+with the no-graph model alone the second. The NYSE effect is not robust
+to the training protocol: with the validation period held out of every
+training window, the gap over the same ten seeds falls from 0.0092 (95%
+CI [0.0028, 0.0165]) to 0.0052 ([<span
+class="math inline">\(-\)</span>0.0015, 0.0120]), the same sign and no
+longer distinguishable from zero. We therefore read it as an indication
+that industry membership matters given the block structure, in a cell
+where the model has almost no skill.</p>
+<h4 id="a-second-test-window">A second test window</h4>
+<p>Each cell has one published test period. For HIST, the one model with
+a gain to attribute, we repeat the experiment on an earlier,
+non-overlapping window (training 2008 to 2011, validation 2012 to 2013,
+test 2014 to 2016, 733 days; Appendix, Table <a href="#tab:histearly"
+data-reference-type="ref" data-reference="tab:histearly">13</a>). HIST
+again gains over its LSTM base (0.0146, 95% CI [0.0098, 0.0197]), and
+the real concept graph again ties a random one (0.0005, [<span
+class="math inline">\(-\)</span>0.0012, 0.0021]), a label-permuted one
+(0.0001, [<span class="math inline">\(-\)</span>0.0018, 0.0017]) and the
+graph without concept links (<span
+class="math inline">\(-0.0001\)</span>, [<span
+class="math inline">\(-\)</span>0.0030, 0.0028]).</p>
 <p>The placebos differ in how they distribute links. The
 degree-preserving placebo keeps every firm’s number of links exactly
 (NYSE: maximum 499, median 29, as in the real graph). The random placebo
@@ -1263,7 +1294,7 @@ planted term, weighted on the validation period, reach 0.08 at <span
 class="math inline">\(\rho=0.05\)</span> and 0.15 at <span
 class="math inline">\(\rho=0.10\)</span> (Appendix, Table <a
 href="#tab:posctrl" data-reference-type="ref"
-data-reference="tab:posctrl">13</a>). RSR captures part of it: under the
+data-reference="tab:posctrl">14</a>). RSR captures part of it: under the
 real graph its predictions correlate 0.04 (<span
 class="math inline">\(\rho=0.05\)</span>) and 0.07 (<span
 class="math inline">\(\rho=0.10\)</span>) with the planted term, against
@@ -1310,18 +1341,33 @@ IC on RT-GCN’s test days is 0.09, more than twice RT-GCN’s own rank IC.
 Planting leaves their real-graph rank IC unchanged (HIST 0.066 unplanted
 and 0.064 planted; RT-GCN 0.037 and 0.038), and RT-GCN’s predictions
 correlate <span class="math inline">\(+0.002\)</span> with the planted
-term under every graph, the real one included. These models, trained
-with their published recipes, do not learn a neighbour-mean lead-lag
-signal of this form, although it exists in the data and runs along their
-own graph. For them, placebo equivalence shows that the trained model
-does not use this kind of relational signal. For RSR, which separates
-the real graph from its placebos once a strong planted signal runs along
-it, placebo equivalence shows that the model extracts no gain above the
-minimum detectable effect from its published graphs. It does not exclude
-graph-borne information that the model fails to convert into such a
-gain: on NYSE a lead-lag signal with an oracle rank IC of 0.07 goes
-undetected, and on NASDAQ so does, against the random placebo, a signal
-confined to the 13% of linked firms.</p>
+term under every graph, the real one included. A signal three times
+stronger is not learned either. At <span
+class="math inline">\(\rho=0.30\)</span> the planted term alone ranks
+CSI300 stocks with an oracle rank IC of 0.38, yet HIST’s real-graph
+advantage over the random placebo is <span
+class="math inline">\(-0.0006\)</span> (95% CI [<span
+class="math inline">\(-\)</span>0.0029, 0.0022]), and its predictions
+follow the planted term no more with the real concepts (rank correlation
+0.014) than with random concepts (0.016) or in the LSTM without any
+graph (0.015). RT-GCN at <span class="math inline">\(\rho=0.30\)</span>
+keeps a rank IC of 0.037 under both graphs (real minus random <span
+class="math inline">\(-0.0001\)</span>, [<span
+class="math inline">\(-\)</span>0.0025, 0.0027], five seeds). These
+models, trained with their published recipes, do not learn a
+neighbour-mean lead-lag signal of this form at any strength we tried,
+although it exists in the data and runs along their own graph: their
+graph channel is close to inert for such a signal, and placebo
+equivalence for them is a statement about the model. For them, placebo
+equivalence shows that the trained model does not use this kind of
+relational signal. For RSR, which separates the real graph from its
+placebos once a strong planted signal runs along it, placebo equivalence
+shows that the model extracts no gain above the minimum detectable
+effect from its published graphs. It does not exclude graph-borne
+information that the model fails to convert into such a gain: on NYSE a
+lead-lag signal with an oracle rank IC of 0.07 goes undetected, and on
+NASDAQ so does, against the random placebo, a signal confined to the 13%
+of linked firms.</p>
 <div id="tab:plant">
 <div class="table-wrap"><table>
 <caption>Positive control: real graph minus placebo, daily rank IC, by
@@ -1461,8 +1507,9 @@ class="math inline">\(^{*}\)</span></td>
 <div class="table-wrap"><table>
 <caption>Positive control across models: real graph minus
 structure-matched placebo, daily rank IC (RSR 20 seeds, HIST and RT-GCN
-ten). On NASDAQ (RSR) the planted term reaches the 13% of firms with a
-real link. <span class="math inline">\(^{*}\)</span>: Benjamini-Hochberg
+ten; five for RT-GCN at <span class="math inline">\(\rho=0.30\)</span>).
+On NASDAQ (RSR) the planted term reaches the 13% of firms with a real
+link. <span class="math inline">\(^{*}\)</span>: Benjamini-Hochberg
 <span class="math inline">\(q&lt;0.05\)</span> within the cell, two-way
 bootstrap.</caption>
 <thead>
@@ -1553,6 +1600,14 @@ class="math inline">\(^{*}\)</span></td>
 <td style="text-align: right;">0.0005</td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.30</td>
+<td style="text-align: right;">-0.0006</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;">RT-GCN, NASDAQ</td>
 <td style="text-align: left;">return</td>
 <td style="text-align: left;">0.05</td>
@@ -1560,13 +1615,21 @@ class="math inline">\(^{*}\)</span></td>
 <td style="text-align: right;">0.0000</td>
 <td style="text-align: right;">-0.0007</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"></td>
 <td style="text-align: left;">return</td>
 <td style="text-align: left;">0.10</td>
 <td style="text-align: right;">0.0007</td>
 <td style="text-align: right;">0.0000</td>
 <td style="text-align: right;">0.0004</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">return</td>
+<td style="text-align: left;">0.30</td>
+<td style="text-align: right;">-0.0001</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">–</td>
 </tr>
 </tbody>
 </table></div>
@@ -1585,8 +1648,8 @@ class="math inline">\(q&lt;0.05\)</span>.</figcaption>
 <h2 id="secondary-analyses">Secondary analyses</h2>
 <p>Forecast-comparison tests and portfolio returns are reported in the
 Appendix (Tables <a href="#tab:dm" data-reference-type="ref"
-data-reference="tab:dm">16</a> and <a href="#tab:port"
-data-reference-type="ref" data-reference="tab:port">17</a>) and agree
+data-reference="tab:dm">17</a> and <a href="#tab:port"
+data-reference-type="ref" data-reference="tab:port">18</a>) and agree
 with the primary test on the random placebo. On the rank correlation,
 Diebold-Mariano and Giacomini-White tests find no difference between the
 real graph and the random placebo in any cell; the model confidence set
@@ -1604,11 +1667,18 @@ to the two-way bootstrap, and the portfolio results are descriptive.</p>
 <p>Failing to reject a difference is not evidence of equivalence <span
 class="citation" data-cites="lakens2017equivalence">(<a
 href="#ref-lakens2017equivalence" role="doc-biblioref">Lakens
-2017</a>)</span>. Table <a href="#tab:eq" data-reference-type="ref"
-data-reference="tab:eq">6</a> reports, for the structure-matched
-placebos, each model’s own rank IC, 90% two-way bootstrap intervals, the
-smallest margin <span class="math inline">\(\delta_{\min}\)</span> at
-which the two one-sided test of <span class="citation"
+2017</a>)</span>, so the “not significant” entries of Table <a
+href="#tab:main" data-reference-type="ref"
+data-reference="tab:main">3</a> are read together with the intervals
+below. With ten seeds a <span class="math inline">\(t\)</span>-based
+interval in place of the percentile interval widens the bounds against
+the random placebo only slightly (CSI300 from 3.0% to 3.3% of the
+model’s rank IC, RT-GCN from 6.3% to 7.1%). Table <a href="#tab:eq"
+data-reference-type="ref" data-reference="tab:eq">6</a> reports, for the
+structure-matched placebos, each model’s own rank IC, 90% two-way
+bootstrap intervals, the smallest margin <span
+class="math inline">\(\delta_{\min}\)</span> at which the two one-sided
+test of <span class="citation"
 data-cites="schuirmann1987tost">Schuirmann (<a
 href="#ref-schuirmann1987tost" role="doc-biblioref">1987</a>)</span>
 declares equivalence, that margin as a share of the model’s rank IC, and
@@ -1648,7 +1718,12 @@ equivalence adds only that random links do no better. HIST gains 0.0115
 over its LSTM base, and against that gain the random-placebo bound of
 <span class="math inline">\(\pm0.0020\)</span> is 17% (25% with the
 Bonferroni interval): a random concept graph retains at least three
-quarters of HIST’s gain.</p>
+quarters of HIST’s gain. The sharpest evidence for HIST is the ablation
+without its hidden-concept module, where the predefined concepts are the
+only cross-stock channel: there the real concepts differ from random
+ones by <span class="math inline">\(-0.0002\)</span> (95% CI [<span
+class="math inline">\(-\)</span>0.0009, 0.0005]), an interval five times
+narrower than in the full model.</p>
 <div id="tab:eq">
 <div class="table-wrap"><table>
 <caption>Equivalence against the structure-matched placebos: the model’s
@@ -1820,13 +1895,14 @@ for model builders</h4>
 markets, and the protocol shows why: through RSR’s two-stage training on
 pretrained embeddings, which improves squared error on NASDAQ with or
 without cross-firm links, or through architecture, training and pooling
-over any concept grouping (CSI300, HIST). On NYSE the identities of the
-links matter given the graph’s shape, but the graph adds nothing over no
-links. In the other cells the gain does not depend on the identities of
-the curated links: a random graph with the same number of links delivers
-forecasts that are statistically indistinguishable, and for HIST, the
-one model with a gain over its base, retains at least three quarters of
-that gain. The audit speaks to the supplied edges under these models and
+over any concept grouping (CSI300, HIST). On NYSE there is an indication
+that the identities of the links matter given the graph’s shape, but the
+graph adds nothing over no links. In the other cells the gain does not
+depend on the identities of the curated links: a random graph with the
+same number of links delivers forecasts that are statistically
+indistinguishable, and for HIST, the one model with a gain over its
+base, retains at least three quarters of that gain on both test windows.
+The audit speaks to the supplied edges under these models and
 benchmarks; it does not establish that economic relations carry no
 predictive information, and Section <a href="#sec:poscontrol"
 data-reference-type="ref" data-reference="sec:poscontrol">5.3</a> shows
@@ -1849,28 +1925,26 @@ robustness runs not included) cost about five US dollars of on-demand
 cloud computing.</p>
 <h4 id="scope">Scope</h4>
 <p>The audit covers three published models in four model-market cells
-and their published test periods: 2017 for RSR (237 days), January 2017
-to July 2020 for HIST (871 days) and the authors’ 172-day test period
-for RT-GCN. Other relation types such as supply-chain links, other
-horizons and rolling test years are extensions with the same protocol;
-for RSR a second test year requires re-estimating the authors’
-pretrained sequential embeddings, whose selection uses the 2016
-validation year. The positive control plants one class of relational
-signal, a linear neighbour mean of a source visible in the input, and
-its thresholds refer to correlation with next-day returns in each test
-universe. The audit measures the forecasting gain a trained model draws
-from its graph; a relation graph can hold information that a given model
-does not convert into a gain above the minimum detectable effect, and in
-the NYSE cell, where the reproduced model has almost no skill,
-equivalence cannot be established. The label-permutation placebo was run
-for the two RSR cells; for HIST the degree-preserving placebo, which
-keeps every stock’s and every concept’s size and shares 2% of the links,
-plays the same role. The relation graphs are the snapshots released with
-each benchmark and may record links formed after the training period;
-the direction and size of this look-ahead are not measured here. The
-test periods are those of the published benchmarks (2017 to 2020), and a
-leakage audit of features, targets, graphs and model selection is in the
-Appendix (Table <a href="#tab:leak" data-reference-type="ref"
+and their published test periods, with a second window for HIST: 2017
+for RSR (237 days), January 2017 to July 2020 for HIST (871 days) and
+the authors’ 172-day test period for RT-GCN. Other relation types such
+as supply-chain links, other horizons and rolling test years are
+extensions with the same protocol; for RSR a second test year requires
+re-estimating the authors’ pretrained sequential embeddings, whose
+selection uses the 2016 validation year. The positive control plants one
+class of relational signal, a linear neighbour mean of a source visible
+in the input, and its thresholds refer to correlation with next-day
+returns in each test universe. The audit measures the forecasting gain a
+trained model draws from its graph; a relation graph can hold
+information that a given model does not convert into a gain above the
+minimum detectable effect, and in the NYSE cell, where the reproduced
+model has almost no skill, equivalence cannot be established. The
+relation graphs are the snapshots released with each benchmark and may
+record links formed after the training period; the direction and size of
+this look-ahead are not measured here. The test periods are those of the
+published benchmarks (2017 to 2020), and a leakage audit of features,
+targets, graphs and model selection is in the Appendix (Table <a
+href="#tab:leak" data-reference-type="ref"
 data-reference="tab:leak">8</a>).</p>
 <h1 id="sec:conclusion">Conclusion</h1>
 <p>Placebo graphs separate what a relational forecaster learns from its
@@ -1880,15 +1954,16 @@ of the curated links over random graphs with the same number of links in
 any model-market cell. Two models gain nothing from their graph over the
 same model without cross-firm links, and the one model that gains over
 its base, HIST, keeps at least three quarters of that gain with a random
-concept graph. On NYSE a topology-preserving placebo shows that industry
-membership carries information relative to an arbitrary membership of
-the same shape, while the industry graph still adds nothing over no
-links. A planted-signal control separates two reasons: RSR converts a
-strong planted neighbour signal into a detectable gain, so it draws no
-gain above the test’s resolution from its published graphs, while HIST
-and RT-GCN do not learn such a signal even when it runs along their own
-graph. The protocol is cheap enough to become a routine part of
-evaluating relational forecasters.</p>
+concept graph, on its published test period and on a second one. On NYSE
+a topology-preserving placebo indicates that industry membership carries
+information relative to an arbitrary membership of the same shape, an
+effect that weakens under a stricter training split, while the industry
+graph adds nothing over no links. A planted-signal control separates two
+reasons: RSR converts a strong planted neighbour signal into a
+detectable gain, so it draws no gain above the test’s resolution from
+its published graphs, while HIST and RT-GCN do not learn such a signal
+even when it runs along their own graph. The protocol is cheap enough to
+become a routine part of evaluating relational forecasters.</p>
 <h1 class="unnumbered" id="data-and-code-availability">Data and code
 availability</h1>
 <p>Code to reproduce every table and figure, the placebo generators and
@@ -2475,20 +2550,22 @@ class="math inline">\(\Delta\)</span></th>
 <h4 id="label-permutation">Label permutation</h4>
 <p>Table <a href="#tab:permute" data-reference-type="ref"
 data-reference="tab:permute">12</a> reports the label-permutation
-placebo for the two RSR cells. Each rebuilt placebo graph equals the
-graph its run used, has the real graph’s number of links and degree
-sequence, and overlaps the real links at the chance rate.</p>
+placebo for every cell, and for NYSE also under the strict split. Each
+rebuilt placebo graph equals the graph its run used, has the real
+graph’s number of links and degree sequence, and overlaps the real links
+at the chance rate.</p>
 <div id="tab:permute">
 <div class="table-wrap"><table>
-<caption>Label-permutation placebo (RSR, 20 seeds): mean daily rank IC
-with the real and the permuted graph, real minus placebo with its 95%
-two-way bootstrap interval, the raw <span
-class="math inline">\(p\)</span>-value and the Benjamini-Hochberg <span
-class="math inline">\(q\)</span> with the test added to the cell’s
-family, and the share of real links the placebo keeps.</caption>
+<caption>Label-permutation placebo: mean daily rank IC with the real and
+the permuted graph, real minus placebo with its 95% two-way bootstrap
+interval, the raw <span class="math inline">\(p\)</span>-value and the
+Benjamini-Hochberg <span class="math inline">\(q\)</span> with the test
+added to the cell’s family, and the share of real links the placebo
+keeps.</caption>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Cell</th>
+<th style="text-align: right;">Seeds</th>
 <th style="text-align: right;">Rank IC, real</th>
 <th style="text-align: right;">Rank IC, permuted</th>
 <th style="text-align: right;"><span
@@ -2504,6 +2581,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">NYSE (RSR)</td>
+<td style="text-align: right;">20</td>
 <td style="text-align: right;">0.0039</td>
 <td style="text-align: right;">-0.0049</td>
 <td style="text-align: right;">0.0088</td>
@@ -2514,6 +2592,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 </tr>
 <tr class="even">
 <td style="text-align: left;">NASDAQ (RSR)</td>
+<td style="text-align: right;">20</td>
 <td style="text-align: right;">0.0297</td>
 <td style="text-align: right;">0.0293</td>
 <td style="text-align: right;">0.0004</td>
@@ -2522,12 +2601,104 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <td style="text-align: right;">0.784</td>
 <td style="text-align: right;">0.2%</td>
 </tr>
+<tr class="odd">
+<td style="text-align: left;">CSI300 (HIST)</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">0.0661</td>
+<td style="text-align: right;">0.0662</td>
+<td style="text-align: right;">-0.0002</td>
+<td style="text-align: right;">[-0.0020, 0.0018]</td>
+<td style="text-align: right;">0.8412</td>
+<td style="text-align: right;">0.975</td>
+<td style="text-align: right;">0.5%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">NASDAQ (RT-GCN)</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">0.0374</td>
+<td style="text-align: right;">0.0368</td>
+<td style="text-align: right;">0.0006</td>
+<td style="text-align: right;">[-0.0023, 0.0036]</td>
+<td style="text-align: right;">0.6744</td>
+<td style="text-align: right;">0.674</td>
+<td style="text-align: right;">5.5%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NYSE (RSR), strict split</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">0.0048</td>
+<td style="text-align: right;">-0.0004</td>
+<td style="text-align: right;">0.0052</td>
+<td style="text-align: right;">[-0.0015, 0.0120]</td>
+<td style="text-align: right;">0.1360</td>
+<td style="text-align: right;">–</td>
+<td style="text-align: right;">9.1%</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<h4 id="second-test-window-for-hist">Second test window for HIST</h4>
+<p>Table <a href="#tab:histearly" data-reference-type="ref"
+data-reference="tab:histearly">13</a> repeats the HIST experiment with
+training 2008 to 2011, validation 2012 to 2013 and test 2014 to 2016
+(733 test days, ten seeds). The real-graph rank IC is 0.092 and the LSTM
+base reaches 0.078. The stock-concept matrix is the same snapshot as in
+the main experiment.</p>
+<div id="tab:histearly">
+<div class="table-wrap"><table>
+<caption>HIST on a second test window (2014 to 2016): real graph minus
+each condition, daily rank IC, ten seeds, two-way bootstrap;
+Benjamini-Hochberg <span class="math inline">\(q\)</span> within the
+window.</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Real graph minus</th>
+<th style="text-align: right;"><span
+class="math inline">\(\Delta\)</span> rank IC</th>
+<th style="text-align: right;">95% CI</th>
+<th style="text-align: right;"><span
+class="math inline">\(p\)</span></th>
+<th style="text-align: right;"><span
+class="math inline">\(q_{\mathrm{BH}}\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Random</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">[-0.0012, 0.0021]</td>
+<td style="text-align: right;">0.565</td>
+<td style="text-align: right;">0.919</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Label permutation</td>
+<td style="text-align: right;">0.0001</td>
+<td style="text-align: right;">[-0.0018, 0.0017]</td>
+<td style="text-align: right;">0.919</td>
+<td style="text-align: right;">0.919</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">No graph links</td>
+<td style="text-align: right;">-0.0001</td>
+<td style="text-align: right;">[-0.0030, 0.0028]</td>
+<td style="text-align: right;">0.907</td>
+<td style="text-align: right;">0.919</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">No-graph base model</td>
+<td style="text-align: right;">0.0146</td>
+<td style="text-align: right;">[0.0098, 0.0197]</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+<td style="text-align: right;"><span
+class="math inline">\(&lt;\)</span>0.001</td>
+</tr>
 </tbody>
 </table></div>
 </div>
 <h4 id="positive-control-diagnostics">Positive-control diagnostics</h4>
 <p>Table <a href="#tab:posctrl" data-reference-type="ref"
-data-reference="tab:posctrl">13</a> reports, for each planted RSR cell,
+data-reference="tab:posctrl">14</a> reports, for each planted RSR cell,
 the oracle rank IC of the planted term on test days, the rank IC of the
 no-graph model on the planted target, a graph oracle that adds the
 planted term to the no-graph predictions with weights fitted on the
@@ -2656,7 +2827,7 @@ class="math inline">\(-\)</span>random</th>
 </div>
 <h4 id="connectivity">Connectivity</h4>
 <p>Table <a href="#tab:connect" data-reference-type="ref"
-data-reference="tab:connect">14</a> splits the NASDAQ comparison into
+data-reference="tab:connect">15</a> splits the NASDAQ comparison into
 firms with and without a real Wikidata link, and adds a placebo that
 rewires the real links at random among the linked firms only, so that
 the same firms stay isolated as under the real graph (it shares 10% of
@@ -2761,7 +2932,7 @@ class="math inline">\(\Delta\)</span> rank IC</th>
 <h4 id="hist-without-its-hidden-concept-module">HIST without its
 hidden-concept module</h4>
 <p>Table <a href="#tab:histabl" data-reference-type="ref"
-data-reference="tab:histabl">15</a> reports HIST with the hidden-concept
+data-reference="tab:histabl">16</a> reports HIST with the hidden-concept
 module removed (its back-cast and output set to zero), so cross-stock
 information can enter only through the predefined concepts.</p>
 <div id="tab:histabl">
@@ -2819,7 +2990,7 @@ real concepts</td>
 </div>
 <h2 id="forecast-comparison-tests">Forecast-comparison tests</h2>
 <p>Table <a href="#tab:dm" data-reference-type="ref"
-data-reference="tab:dm">16</a> reports Diebold-Mariano tests with
+data-reference="tab:dm">17</a> reports Diebold-Mariano tests with
 Newey-West variance and the Harvey-Leybourne-Newbold correction,
 Giacomini-White conditional tests with the lagged loss differential as
 instrument, and membership of the 90% model confidence set. Both use the
@@ -2861,7 +3032,7 @@ graph.</p>
 <h4 id="single-models">Single models</h4>
 <p>The ensemble comparison is not the one a practitioner deploys. Per
 seed (Appendix, Table <a href="#tab:dmseed" data-reference-type="ref"
-data-reference="tab:dmseed">18</a>), the real graph is more accurate
+data-reference="tab:dmseed">19</a>), the real graph is more accurate
 than a random or degree-preserving placebo in at most 3 of 20 seeds
 (RSR) or 2 of 10 (HIST, RT-GCN) and less accurate in up to 5 of 20, with
 no consistent direction; against the NASDAQ correlation-matched placebo
@@ -3230,7 +3401,7 @@ class="math inline">\(&lt;\)</span>0.001</td>
 </div>
 <h2 id="economic-value">Economic value</h2>
 <p>Table <a href="#tab:port" data-reference-type="ref"
-data-reference="tab:port">17</a> reports daily-rebalanced equal-weight
+data-reference="tab:port">18</a> reports daily-rebalanced equal-weight
 long portfolios of the top-ranked stocks, with equal capital across the
 seed portfolios, net of 5 basis points per side for RSR and RT-GCN
 (turnover computed from the saved predictions) and gross for HIST, whose
@@ -3256,8 +3427,8 @@ with the price level. Its skill is not a price-level sort, however: the
 price level alone has a rank IC of <span
 class="math inline">\(-0.016\)</span>, and RT-GCN’s rank IC with the
 price level removed from its predictions is 0.031, against 0.037 in
-total. The portfolios hold five or ten names out of 854 to 1,737 (fifty
-of about 300 for HIST) over one test period, so this section is
+total. The portfolios hold five names out of 854 to 1,737 (fifty of
+about 300 for HIST) over one test period, so this section is
 descriptive; selection among the conditions tested would further deflate
 any single Sharpe ratio <span class="citation"
 data-cites="bailey2014deflated">(<a href="#ref-bailey2014deflated"
@@ -3552,7 +3723,7 @@ class="math inline">\(q_{\mathrm{BH}}\)</span></th>
 <h4 id="per-seed-forecast-comparisons">Per-seed forecast
 comparisons</h4>
 <p>Table <a href="#tab:dmseed" data-reference-type="ref"
-data-reference="tab:dmseed">18</a> reports the Diebold-Mariano test run
+data-reference="tab:dmseed">19</a> reports the Diebold-Mariano test run
 separately for every seed.</p>
 <div id="tab:dmseed">
 <div class="table-wrap"><table>
@@ -3733,9 +3904,9 @@ data-entry-spacing="0" role="list">
 <div id="ref-abadie2010synthetic" class="csl-entry" role="listitem">
 Abadie, Alberto, Alexis Diamond, and Jens Hainmueller. 2010.
 <span>“Synthetic Control Methods for Comparative Case Studies:
-Estimating the Effect of California’s Tobacco Control Program.”</span>
-<em>Journal of the American Statistical Association</em> 105 (490):
-493–505. <a
+Estimating the Effect of <span class="nocase">California’s</span>
+Tobacco Control Program.”</span> <em>Journal of the American Statistical
+Association</em> 105 (490): 493–505. <a
 href="https://doi.org/10.1198/jasa.2009.ap08746">https://doi.org/10.1198/jasa.2009.ap08746</a>.
 </div>
 <div id="ref-ali2020shared" class="csl-entry" role="listitem">
